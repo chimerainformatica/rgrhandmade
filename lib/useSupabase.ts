@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { hasSupabaseBrowserConfig, supabaseBrowser, getCurrentUser, signOut as supabaseSignOut } from "./supabase";
-import { getFallbackNews } from "./fallback";
 import type { User } from "@supabase/supabase-js";
 
 export type CatalogueRow = {
@@ -163,15 +162,11 @@ export function useNews(lang: string = "it") {
         return json.items as NewsRow[] | undefined;
       })
       .then((data) => {
-        if (!data || data.length === 0) {
-          setNews(getFallbackNews(lang));
-        } else {
-          setNews(data);
-        }
+        setNews(data || []);
         setError(null);
       })
       .catch((err: Error) => {
-        setNews(getFallbackNews(lang));
+        setNews([]);
         setError(err.message);
       })
       .finally(() => {
