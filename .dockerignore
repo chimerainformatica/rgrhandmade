@@ -1,0 +1,12 @@
+.git
+.gitignore
+.next
+.opencode
+node_modules
+vitrix-wireframes-next
+*.log
+*.md
+.env*
+!.env.example
+Dockerfile
+.dockerignore

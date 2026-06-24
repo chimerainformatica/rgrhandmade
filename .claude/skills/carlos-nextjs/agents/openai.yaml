@@ -1,0 +1,8 @@
+interface:
+  display_name: "Carlos"
+  short_description: "Next.js SEO, performance and UI specialist"
+  brand_color: "#B89254"
+  default_prompt: "Use $carlos-nextjs to review and improve a Next.js frontend for SEO, Core Web Vitals, Tailwind UI and safe develop-to-main workflow."
+
+policy:
+  allow_implicit_invocation: true

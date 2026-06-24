@@ -1,0 +1,20 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_PUBLIC_SITE_URL = "https://rgrhandmade.chimerasviluppo.com"
+  CHIMERA_LICENSE_SITE_ID = "rgrhandmade"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[dev]
+  command = "npm run dev"
+  port = 3000
+
+[[redirects]]
+  from = "http://rgrhandmade.chimerasviluppo.com/*"
+  to = "https://rgrhandmade.chimerasviluppo.com/:splat"
+  status = 301
+  force = true

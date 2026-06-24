@@ -1,36 +1,83 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
+# Dependencies
+node_modules/
 /.pnp
 .pnp.js
 
-# testing
-/coverage
+# Environment variables (credenziali, non committare mai)
+.env
+.env.local
+.env.*.local
 
-# next.js
-/.next/
-/out/
-
-# production
+# Next.js build artifacts
+.next/
+out/
+dist/
 /build
 
-# misc
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
 *.pem
 
-# debug
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
-.env
+# Testing
+/coverage
 
-# vercel
+# Temporary files
+.cache/
+storage/
+*.tmp
+.tmp-next-dev.err.log
+.tmp-next-dev.out.log
+.claude.zip
+.opencode/
+vitrix-wireframes-next/
+
+# Vercel
 .vercel
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Dev-only - non necessario per deploy Netlify
+
+# Report/guide generate da Claude (non fanno parte del codebase)
+*_GUIDE.md
+*_SUMMARY.md
+*_REPORT.md
+*_FIX.md
+.claude/
+!.claude/
+!.claude/skills/
+!.claude/skills/carlos-nextjs/
+!.claude/skills/carlos-nextjs/**
+.claude/skills/ui-ux-pro-max/
+docs/
+prototype rgrhandmade.it/
+references_ui/
+screenshot/
+.implementazioni/
+vitrix-cms-design-system/
+vtx-gallery/
+storage/
+PROJECT.md
+SITE.md
+LANDING_STACK.md
+SUPABASE_SETUP.md
+copilot-instructions.md
+release.ps1
+
+# Local Netlify folder
+.netlify
