@@ -23,6 +23,28 @@ export type CatalogueRow = {
 export type CollectionRow = CatalogueRow;
 
 const CATALOGUE_LANGS = ["it", "en"] as const;
+const PARURE_CATEGORY = "Parure";
+
+function isCatalogueCollection(row: CatalogueRow): boolean {
+  if (row.item_type === "collection" || row.item_type === "item") {
+    return row.item_type === "collection";
+  }
+  return row.category === PARURE_CATEGORY;
+}
+
+function getCatalogueParentId(row: CatalogueRow): number | null {
+  return row.parent_id ?? row.parure_id ?? null;
+}
+
+function filterEmptyCatalogueCollections(items: CatalogueRow[]): CatalogueRow[] {
+  const collectionIdsWithChildren = new Set(
+    items
+      .map((row) => getCatalogueParentId(row))
+      .filter((parentId): parentId is number => parentId != null),
+  );
+
+  return items.filter((row) => !isCatalogueCollection(row) || collectionIdsWithChildren.has(row.id));
+}
 
 function fillCatalogueImageFromSibling(items: CatalogueRow[], lang: string) {
   const byRef = new Map<string, CatalogueRow[]>();
@@ -112,7 +134,8 @@ export function useCatalogue(lang: string = "it") {
           setItems([]);
           if (err) setError(err.message);
         } else {
-          setItems(fillCatalogueImageFromSibling(data as CatalogueRow[], lang));
+          const normalizedItems = fillCatalogueImageFromSibling(data as CatalogueRow[], lang);
+          setItems(filterEmptyCatalogueCollections(normalizedItems));
         }
         setLoading(false);
       });
