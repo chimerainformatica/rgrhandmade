@@ -17,7 +17,12 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "mzxsbwoeupzctfrtaemd.supabase.co",
-        pathname: "/storage/v1/object/public/**"
+        pathname: "/storage/v1/object/public/vitrix-media/**"
+      },
+      {
+        protocol: "https",
+        hostname: "mzxsbwoeupzctfrtaemd.supabase.co",
+        pathname: "/storage/v1/render/image/public/vitrix-media/**"
       }
     ]
   },

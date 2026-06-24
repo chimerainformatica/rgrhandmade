@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
-import { FrontendLoader } from "@/components/ui/FrontendLoader";
 import type { Lang } from "@/lib/content";
 import { useNews, type NewsRow } from "@/lib/useSupabase";
 import { getCoverImageUrl, getThumbnailImageUrl, preloadImage } from "@/lib/vitrix/image";
@@ -35,7 +35,20 @@ const copy = {
 const coverOf = (item: NewsRow) => item.main_image_url ?? item.cover_image ?? item.main_image_path ?? null;
 const dateOf = (item: NewsRow) => item.event_date_label ?? item.event_date ?? "";
 const excerptOf = (item: NewsRow) => item.excerpt ?? item.description ?? "";
-const hrefOf = (item: NewsRow) => (item.slug ? `/events/${item.type}/${item.slug}` : null);
+const VALID_EVENT_TYPES = new Set(["event", "fiera", "press"]);
+
+function isValidEventType(type: string | null | undefined): type is "event" | "fiera" | "press" {
+  return Boolean(type && VALID_EVENT_TYPES.has(type));
+}
+
+const hrefOf = (item: NewsRow, lang: Lang) => {
+  if (!item.slug || !isValidEventType(item.type)) return null;
+  return `/events/${item.type}/${encodeURIComponent(item.slug)}?lang=${lang}`;
+};
+
+function shouldBypassNextOptimization(src: string): boolean {
+  return src.startsWith("http") && !src.includes("mzxsbwoeupzctfrtaemd.supabase.co");
+}
 
 function uniqueById(items: NewsRow[]) {
   const seen = new Set<number>();
@@ -50,12 +63,14 @@ function EventCardLink({
   item,
   children,
   className,
+  lang,
 }: {
   item: NewsRow;
   children: ReactNode;
   className: string;
+  lang: Lang;
 }) {
-  const href = hrefOf(item);
+  const href = hrefOf(item, lang);
   if (!href) {
     return (
       <div className={`${className} cursor-default opacity-90`} aria-disabled="true">
@@ -74,15 +89,15 @@ function EventCardLink({
 function EventImage({
   src,
   alt,
-  variant = "thumb",
   position,
+  priority = false,
 }: {
   src: string | null;
   alt: string;
-  variant?: "thumb" | "cover";
   position?: string | null;
+  priority?: boolean;
 }) {
-  const url = variant === "cover" ? getCoverImageUrl(src) : getThumbnailImageUrl(src);
+  const url = getThumbnailImageUrl(src);
   const [failed, setFailed] = useState(false);
 
   if (!url || failed) {
@@ -96,14 +111,15 @@ function EventImage({
   }
 
   return (
-    <img
+    <Image
       src={url}
       alt={alt}
-      className="h-full w-full object-cover"
+      fill
+      sizes="(max-width: 680px) 100vw, (max-width: 1024px) 50vw, 33vw"
+      className="object-cover"
       style={{ objectPosition: position || "center" }}
-      loading={variant === "cover" ? "eager" : "lazy"}
-      fetchPriority={variant === "cover" ? "high" : "auto"}
-      decoding="async"
+      priority={priority}
+      unoptimized={shouldBypassNextOptimization(url)}
       onError={() => setFailed(true)}
     />
   );
@@ -130,7 +146,37 @@ function MiniSeal() {
   );
 }
 
-function NewsCard({ item, index, ctaLabel }: { item: NewsRow; index: number; ctaLabel: string }) {
+function EventCardsSkeleton() {
+  return (
+    <>
+      <div className="mt-14 flex gap-6 overflow-hidden pb-7">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="shrink-0 basis-[calc((100%_-_48px)/3)] overflow-hidden border border-[#d8c8b4] bg-warm-white shadow-[0_22px_54px_rgba(48,35,24,0.10)] max-[1024px]:basis-[calc((100%_-_24px)/2)] max-[680px]:basis-full"
+          >
+            <div className="aspect-[16/10] skeleton" />
+            <div className="relative flex min-h-[330px] flex-col items-center px-9 pb-8 pt-12 max-[680px]:min-h-[300px] max-[680px]:px-6">
+              <span className="absolute left-1/2 top-0 z-10 size-12 -translate-x-1/2 -translate-y-1/2 rounded-full skeleton" />
+              <div className="h-8 w-2/3 rounded skeleton" />
+              <div className="mt-4 h-3 w-3 rounded-sm skeleton" />
+              <div className="mt-5 h-4 w-36 rounded skeleton" />
+              <div className="mt-8 h-4 w-full rounded skeleton" />
+              <div className="mt-3 h-4 w-4/5 rounded skeleton" />
+              <div className="mt-auto h-11 w-36 skeleton" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 flex items-center justify-center gap-5">
+        <div className="size-14 rounded-full skeleton" />
+        <div className="size-14 rounded-full skeleton" />
+      </div>
+    </>
+  );
+}
+
+function NewsCard({ item, index, ctaLabel, lang }: { item: NewsRow; index: number; ctaLabel: string; lang: Lang }) {
   const date = dateOf(item);
   const excerpt = excerptOf(item);
 
@@ -144,11 +190,12 @@ function NewsCard({ item, index, ctaLabel }: { item: NewsRow; index: number; cta
     >
       <EventCardLink
         item={item}
+        lang={lang}
         className="group flex h-full min-h-[570px] flex-col overflow-hidden border border-[#d8c8b4] bg-warm-white text-center shadow-[0_22px_54px_rgba(48,35,24,0.16)] transition-transform duration-300 hover:-translate-y-1 max-[680px]:min-h-[520px]"
       >
-        <div className="aspect-[16/10] overflow-hidden bg-[#F1ECE3]">
+        <div className="relative aspect-[16/10] overflow-hidden bg-[#F1ECE3]">
           <div className="h-full w-full transition-transform duration-[1000ms] ease-out group-hover:scale-[1.035]">
-            <EventImage src={coverOf(item)} alt={item.title} variant="thumb" position={item.image_position} />
+            <EventImage src={coverOf(item)} alt={item.image_alt || item.title} position={item.image_position} priority={index === 0} />
           </div>
         </div>
 
@@ -290,9 +337,7 @@ export function VtxEventsSection({ config, lang }: Props) {
           </Reveal>
 
           {showSkeleton ? (
-            <div className="flex min-h-[360px] items-center justify-center px-6">
-              <FrontendLoader label={t.loading} />
-            </div>
+            <EventCardsSkeleton />
           ) : items.length === 0 ? (
             <p className="py-20 text-center font-serif text-[24px] italic text-taupe">{t.empty}</p>
           ) : (
@@ -304,7 +349,7 @@ export function VtxEventsSection({ config, lang }: Props) {
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
                 {items.map((item, index) => (
-                  <NewsCard key={item.id} item={item} index={index} ctaLabel={ctaLabel} />
+                  <NewsCard key={item.id} item={item} index={index} ctaLabel={ctaLabel} lang={lang} />
                 ))}
               </div>
 

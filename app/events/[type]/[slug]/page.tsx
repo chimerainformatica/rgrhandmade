@@ -1,38 +1,63 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseConfig } from "@/lib/supabase/config";
-import { getPreviewImageUrl } from "@/lib/vitrix/image";
+import { getCoverImageUrl, getPreviewImageUrl } from "@/lib/vitrix/image";
 import { getSiteSettings } from "@/lib/vitrix/settings";
 import { PageChrome } from "@/components/PageChrome";
 import type { VtxEventRow } from "@/lib/vitrix/types";
 
 const VALID_TYPES = new Set(["event", "fiera", "press"]);
+const VALID_LANGS = new Set(["it", "en"]);
+const DEFAULT_HERO_IMAGE = "/assets/rgr/news-hero.webp";
 
-type Props = { params: Promise<{ type: string; slug: string }> };
+type Props = {
+  params: Promise<{ type: string; slug: string }>;
+  searchParams?: Promise<{ lang?: string }>;
+};
 
-async function getEvent(type: string, slug: string): Promise<VtxEventRow | null> {
+function normalizeLang(lang: string | undefined): "it" | "en" | null {
+  return lang && VALID_LANGS.has(lang) ? (lang as "it" | "en") : null;
+}
+
+function decodeRouteSlug(slug: string): string {
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
+  }
+}
+
+function shouldBypassNextOptimization(src: string): boolean {
+  return src.startsWith("http") && !src.includes("mzxsbwoeupzctfrtaemd.supabase.co");
+}
+
+async function getEvent(type: string, slug: string, lang?: string | null): Promise<VtxEventRow | null> {
   if (!VALID_TYPES.has(type)) return null;
   const config = getSupabaseConfig();
   if (!config.hasServiceRole) return null;
 
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("news")
     .select("*")
     .eq("slug", slug)
     .eq("type", type)
-    .eq("status", "published")
-    .maybeSingle();
+    .eq("status", "published");
+
+  if (lang) query = query.eq("lang", lang);
+
+  const { data, error } = await query.maybeSingle();
 
   if (error || !data) return null;
   return data as VtxEventRow;
 }
 
-const coverOf = (e: VtxEventRow) => e.main_image_url ?? e.cover_image ?? e.main_image_path ?? null;
-const dateOf = (e: VtxEventRow) => e.event_date_label ?? e.event_date ?? "";
-const bodyOf = (e: VtxEventRow) => e.content ?? e.body ?? e.excerpt ?? e.description ?? "";
+const coverOf = (event: VtxEventRow) => event.main_image_url ?? event.cover_image ?? event.main_image_path ?? null;
+const dateOf = (event: VtxEventRow) => event.event_date_label ?? event.event_date ?? "";
+const bodyOf = (event: VtxEventRow) => event.content ?? event.body ?? event.excerpt ?? event.description ?? "";
 
 function absoluteUrl(value: string | null | undefined, base: string): string | undefined {
   if (!value) return undefined;
@@ -43,27 +68,30 @@ function absoluteUrl(value: string | null | undefined, base: string): string | u
   }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { type, slug } = await params;
-  const e = await getEvent(type, slug);
-  if (!e) return { title: "Contenuto non trovato — RGR Handmade" };
+  const lang = normalizeLang((await searchParams)?.lang);
+  const decodedSlug = decodeRouteSlug(slug);
+  const event = await getEvent(type, decodedSlug, lang);
+  if (!event) return { title: "Contenuto non trovato - RGR Handmade" };
 
   const settings = await getSiteSettings();
-  const description = e.seo_description ?? e.excerpt ?? e.description ?? undefined;
-  const canonical = absoluteUrl(e.canonical_url, settings.canonical_url) ?? new URL(`/events/${type}/${slug}`, settings.canonical_url).toString();
-  const ogSource = e.og_image_url ?? e.og_image_path ?? coverOf(e);
+  const description = event.seo_description ?? event.excerpt ?? event.description ?? undefined;
+  const canonicalPath = `/events/${type}/${encodeURIComponent(decodedSlug)}${lang ? `?lang=${lang}` : ""}`;
+  const canonical = absoluteUrl(event.canonical_url, settings.canonical_url) ?? new URL(canonicalPath, settings.canonical_url).toString();
+  const ogSource = event.og_image_url ?? event.og_image_path ?? coverOf(event);
   const ogImage = absoluteUrl(getPreviewImageUrl(ogSource) ?? ogSource, settings.canonical_url);
 
   return {
-    title: e.seo_title ?? `${e.title} — RGR Handmade`,
+    title: event.seo_title ?? `${event.title} - RGR Handmade`,
     description,
     alternates: { canonical },
     robots: {
-      index: e.robots_index ?? true,
-      follow: e.robots_follow ?? true,
+      index: event.robots_index ?? true,
+      follow: event.robots_follow ?? true,
     },
     openGraph: {
-      title: e.seo_title ?? e.title,
+      title: event.seo_title ?? event.title,
       description,
       type: "article",
       url: canonical,
@@ -73,16 +101,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function EventDetailPage({ params }: Props) {
+export default async function EventDetailPage({ params, searchParams }: Props) {
   const { type, slug } = await params;
-  const event = await getEvent(type, slug);
+  const lang = normalizeLang((await searchParams)?.lang);
+  const decodedSlug = decodeRouteSlug(slug);
+  const event = await getEvent(type, decodedSlug, lang);
   if (!event) notFound();
 
-  const cover = getPreviewImageUrl(coverOf(event));
+  const heroImage = getCoverImageUrl(coverOf(event)) ?? DEFAULT_HERO_IMAGE;
   const date = dateOf(event);
   const paragraphs = bodyOf(event)
     .split(/\n{2,}|\r\n{2,}/)
-    .map((p) => p.trim())
+    .map((paragraph) => paragraph.trim())
     .filter(Boolean);
   const tags = event.tags ?? [];
 
@@ -90,74 +120,71 @@ export default async function EventDetailPage({ params }: Props) {
     <main className="min-h-screen bg-ivory text-warm-black">
       <PageChrome initialLang={(event.lang as "it" | "en") ?? "it"} />
 
-      {/* HERO sobrio — fascia compatta, non invasiva */}
-      <section className="pt-[140px] pb-12 max-[640px]:pt-28 max-[640px]:pb-8 border-b border-hairline/70 bg-[linear-gradient(180deg,#F8F2E8_0%,#F1E9DB_100%)]">
-        <div className="max-w-[860px] mx-auto px-8 max-[640px]:px-4">
-          <nav className="font-sans text-[11px] tracking-[0.12em] uppercase text-taupe mb-6">
-            <Link href="/" className="hover:text-gold transition-colors">Home</Link>
+      <section className="relative min-h-[620px] overflow-hidden border-b border-hairline-dark bg-warm-black pt-[150px] text-ivory max-[640px]:min-h-[560px] max-[640px]:pt-28">
+        <Image
+          src={heroImage}
+          alt={event.image_alt || event.title}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+          style={{ objectPosition: event.image_position || "center" }}
+          unoptimized={shouldBypassNextOptimization(heroImage)}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(23,20,17,0.72)_0%,rgba(23,20,17,0.38)_42%,rgba(23,20,17,0.88)_100%)]" aria-hidden="true" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(216,190,130,0.18),transparent_28%)]" aria-hidden="true" />
+
+        <div className="relative z-10 mx-auto flex min-h-[470px] max-w-[980px] flex-col justify-end px-8 pb-16 max-[640px]:min-h-[430px] max-[640px]:px-4 max-[640px]:pb-10">
+          <nav className="mb-7 font-sans text-[11px] uppercase text-ivory/76">
+            <Link href="/" className="transition-colors hover:text-gold-light">Home</Link>
             <span className="mx-2">/</span>
-            <Link href="/#news" className="hover:text-gold transition-colors">News</Link>
+            <Link href="/#news" className="transition-colors hover:text-gold-light">News</Link>
             <span className="mx-2">/</span>
-            <span className="text-warm-black/70">{event.category}</span>
+            <span className="text-ivory/88">{event.category}</span>
           </nav>
 
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
-            <span className="font-sans text-[10.5px] font-semibold tracking-[0.22em] uppercase px-3 py-1 rounded-full bg-gold/14 text-gold border border-gold/30">
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <span className="border border-gold/50 bg-warm-black/30 px-3 py-1 font-sans text-[10.5px] font-semibold uppercase text-gold-light backdrop-blur">
               {event.category}
             </span>
             {event.venue && (
-              <span className="font-sans text-[11px] tracking-[0.16em] uppercase text-taupe">{event.venue}</span>
+              <span className="font-sans text-[11px] uppercase text-ivory/76">{event.venue}</span>
             )}
-            {date && <span className="font-serif italic text-[16px] text-taupe ml-auto">{date}</span>}
+            {date && <span className="ml-auto font-serif text-[17px] italic text-ivory/82 max-[640px]:ml-0">{date}</span>}
           </div>
 
-          <h1 className="font-serif font-normal text-[clamp(30px,5vw,52px)] leading-[1.05] text-warm-black text-balance">
+          <h1 className="max-w-[780px] text-balance font-serif text-[clamp(42px,7vw,86px)] font-normal leading-[0.95] text-ivory">
             {event.title}
           </h1>
 
           {(event.excerpt || event.description) && (
-            <p className="mt-5 font-sans text-[16px] leading-[1.75] text-warm-black/65 max-w-[60ch]">
+            <p className="mt-6 max-w-[58ch] font-sans text-[16px] leading-[1.75] text-ivory/78">
               {event.excerpt ?? event.description}
             </p>
           )}
         </div>
       </section>
 
-      {/* CORPO */}
       <article className="py-14 max-[640px]:py-10">
-        <div className="max-w-[860px] mx-auto px-8 max-[640px]:px-4">
-          {cover && (
-            <figure className="mb-12 overflow-hidden rounded-[6px] border border-hairline bg-[#F0EDE8] shadow-[0_20px_44px_rgba(61,44,27,0.12)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={cover}
-                alt={event.image_alt || event.title}
-                className="w-full block object-cover"
-                style={{ objectPosition: event.image_position || "center" }}
-                loading="eager"
-                decoding="async"
-              />
-            </figure>
-          )}
-
-          <div className="prose-event max-w-[68ch] mx-auto">
+        <div className="mx-auto max-w-[860px] px-8 max-[640px]:px-4">
+          <div className="prose-event mx-auto max-w-[68ch]">
             {paragraphs.length > 0 ? (
-              paragraphs.map((p, i) => (
-                <p key={i} className="font-sans text-[16.5px] leading-[1.8] text-warm-black/80 mb-6">
-                  {p}
+              paragraphs.map((paragraph, index) => (
+                <p key={index} className="mb-6 font-sans text-[16.5px] leading-[1.8] text-warm-black/80">
+                  {paragraph}
                 </p>
               ))
             ) : (
-              <p className="font-serif italic text-[20px] text-taupe text-center">
+              <p className="text-center font-serif text-[20px] italic text-taupe">
                 Contenuto in aggiornamento.
               </p>
             )}
           </div>
 
           {tags.length > 0 && (
-            <div className="mt-10 flex flex-wrap gap-2 max-w-[68ch] mx-auto">
+            <div className="mx-auto mt-10 flex max-w-[68ch] flex-wrap gap-2">
               {tags.map((tag) => (
-                <span key={tag} className="font-sans text-[12px] px-3 py-1 rounded-full bg-warm-white border border-hairline text-taupe">
+                <span key={tag} className="border border-hairline bg-warm-white px-3 py-1 font-sans text-[12px] text-taupe">
                   #{tag}
                 </span>
               ))}
@@ -170,16 +197,16 @@ export default async function EventDetailPage({ params }: Props) {
                 href={event.cta_url}
                 target={event.cta_target || "_self"}
                 rel={event.cta_target === "_blank" ? "noopener noreferrer" : undefined}
-                className="inline-flex items-center gap-3 px-8 py-4 font-sans text-[12.5px] font-medium tracking-[0.16em] uppercase rounded-full border border-gold text-warm-black hover:bg-gold hover:text-warm-white transition-all duration-300"
+                className="inline-flex items-center gap-3 rounded-full border border-gold px-8 py-4 font-sans text-[12.5px] font-medium uppercase text-warm-black transition-all duration-300 hover:bg-gold hover:text-warm-white"
               >
                 {event.cta_label}
               </a>
             </div>
           )}
 
-          <div className="mt-16 pt-8 border-t border-hairline text-center">
-            <Link href="/#news" className="inline-flex items-center gap-2 font-sans text-[12.5px] font-medium tracking-[0.14em] uppercase text-gold hover:text-gold-deep transition-colors">
-              ← {event.lang === "en" ? "Back to news" : "Torna alle news"}
+          <div className="mt-16 border-t border-hairline pt-8 text-center">
+            <Link href="/#news" className="inline-flex items-center gap-2 font-sans text-[12.5px] font-medium uppercase text-gold transition-colors hover:text-gold-deep">
+              {event.lang === "en" ? "Back to news" : "Torna alle news"}
             </Link>
           </div>
         </div>
