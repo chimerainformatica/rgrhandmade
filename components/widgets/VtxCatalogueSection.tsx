@@ -337,7 +337,7 @@ function CollectionBlock({
                     </span>
                   </div>
 
-                  {/* Vecchia overlay label (opzionale) */}
+                  {/* Titolo overlay */}
                   {showMiniOverlay && (
                     <span
                       className="absolute bottom-0 left-0 right-0 px-[18px] py-[14px] font-serif"
@@ -347,18 +347,18 @@ function CollectionBlock({
                         background: "linear-gradient(to top, rgba(246,239,229,0.82) 0%, rgba(246,239,229,0) 100%)",
                       }}
                     >
-                      {itemCategoryLabel(item.category, lang)}
+                      {item.title}
                     </span>
                   )}
                 </div>
 
-                {/* Footer: ref + categoria */}
+                {/* Footer: ref + titolo */}
                 <div className="flex shrink-0 flex-col gap-[2px] px-3 py-2.5 bg-[#f6efe5] border-t border-[#d8c8b4]/40">
                   {showRefBadge && (
                     <span className="text-[10px] tracking-[0.2em] uppercase text-gold font-medium">{item.ref}</span>
                   )}
                   <span className="font-serif text-[14px] font-normal leading-[1.2] text-warm-black">
-                    {itemCategoryLabel(item.category, lang)}
+                    {item.title}
                   </span>
                 </div>
               </button>
