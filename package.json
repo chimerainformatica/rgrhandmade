@@ -1,0 +1,39 @@
+{
+  "name": "rgrhandmade-next",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "seed:superadmin": "node scripts/seed-superadmin.mjs",
+    "lint": "eslint app components lib --ext .ts,.tsx --max-warnings=0"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.1",
+    "@mui/material": "^9.0.1",
+    "@opentelemetry/api": "^1.9.1",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.1",
+    "framer-motion": "^12.39.0",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.18",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-easy-crop": "^5.5.7",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.5.18",
+    "playwright": "^1.60.0",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,1 @@
+export { VtxCataloguePanel } from "./CtxCataloguePanel";

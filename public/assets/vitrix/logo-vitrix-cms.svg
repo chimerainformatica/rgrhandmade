@@ -1,0 +1,40 @@
+<svg width="238" height="64" viewBox="0 0 238 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Vitrix CMS</title>
+  <desc id="desc">Logo Vitrix CMS con monogramma V in gradiente e lettering ITRIX CMS.</desc>
+  <defs>
+    <linearGradient id="vitrix-mark-gradient" x1="2" y1="4" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2EC4F1"/>
+      <stop offset="0.46" stop-color="#6C5CE7"/>
+      <stop offset="1" stop-color="#B22CFF"/>
+    </linearGradient>
+    <linearGradient id="vitrix-mark-highlight" x1="18" y1="5" x2="42" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D94DFF"/>
+      <stop offset="1" stop-color="#6C5CE7"/>
+    </linearGradient>
+  </defs>
+
+  <g aria-hidden="true">
+    <path d="M2.5 10H16.5L31.7 39.2L24.5 53.6L2.5 10Z" fill="url(#vitrix-mark-gradient)"/>
+    <path d="M25.4 10H48.5L25.1 53.6L17.7 39.5L25.4 10Z" fill="url(#vitrix-mark-highlight)"/>
+    <path d="M25.4 10H48.5L39.6 26.7H21L25.4 10Z" fill="#7D39F2"/>
+  </g>
+
+  <text
+    x="57"
+    y="41"
+    fill="#0F172A"
+    font-family="Manrope, Inter, Arial, sans-serif"
+    font-size="40"
+    font-weight="800"
+    letter-spacing="0"
+  >ITRIX</text>
+  <text
+    x="178"
+    y="46"
+    fill="#6C5CE7"
+    font-family="Manrope, Inter, Arial, sans-serif"
+    font-size="14"
+    font-weight="800"
+    letter-spacing="1.2"
+  >CMS</text>
+</svg>
