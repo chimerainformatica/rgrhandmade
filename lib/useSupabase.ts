@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { hasSupabaseBrowserConfig, supabaseBrowser, getCurrentUser, signOut as supabaseSignOut } from "./supabase";
-import { getFallbackNews } from "./fallback";
 import type { User } from "@supabase/supabase-js";
 
 export type CatalogueRow = {
@@ -23,6 +22,28 @@ export type CatalogueRow = {
 export type CollectionRow = CatalogueRow;
 
 const CATALOGUE_LANGS = ["it", "en"] as const;
+const PARURE_CATEGORY = "Parure";
+
+function isCatalogueCollection(row: CatalogueRow): boolean {
+  if (row.item_type === "collection" || row.item_type === "item") {
+    return row.item_type === "collection";
+  }
+  return row.category === PARURE_CATEGORY;
+}
+
+function getCatalogueParentId(row: CatalogueRow): number | null {
+  return row.parent_id ?? row.parure_id ?? null;
+}
+
+function filterEmptyCatalogueCollections(items: CatalogueRow[]): CatalogueRow[] {
+  const collectionIdsWithChildren = new Set(
+    items
+      .map((row) => getCatalogueParentId(row))
+      .filter((parentId): parentId is number => parentId != null),
+  );
+
+  return items.filter((row) => !isCatalogueCollection(row) || collectionIdsWithChildren.has(row.id));
+}
 
 function fillCatalogueImageFromSibling(items: CatalogueRow[], lang: string) {
   const byRef = new Map<string, CatalogueRow[]>();
@@ -112,7 +133,8 @@ export function useCatalogue(lang: string = "it") {
           setItems([]);
           if (err) setError(err.message);
         } else {
-          setItems(fillCatalogueImageFromSibling(data as CatalogueRow[], lang));
+          const normalizedItems = fillCatalogueImageFromSibling(data as CatalogueRow[], lang);
+          setItems(filterEmptyCatalogueCollections(normalizedItems));
         }
         setLoading(false);
       });
@@ -140,15 +162,11 @@ export function useNews(lang: string = "it") {
         return json.items as NewsRow[] | undefined;
       })
       .then((data) => {
-        if (!data || data.length === 0) {
-          setNews(getFallbackNews(lang));
-        } else {
-          setNews(data);
-        }
+        setNews(data || []);
         setError(null);
       })
       .catch((err: Error) => {
-        setNews(getFallbackNews(lang));
+        setNews([]);
         setError(err.message);
       })
       .finally(() => {

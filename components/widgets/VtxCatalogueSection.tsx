@@ -85,6 +85,10 @@ function getCollectionElements(head: CollectionRow, all: CollectionRow[]): Colle
     .sort((a, b) => a.sort_order - b.sort_order);
 }
 
+function hasLinkedItems(head: CollectionRow, all: CollectionRow[]): boolean {
+  return getCollectionElements(head, all).length > 0;
+}
+
 function normalizeText(value: string | null | undefined): string {
   return (value ?? "")
     .toLowerCase()
@@ -129,9 +133,10 @@ function itemCategoryLabel(category: string, lang: Lang): string {
  *  - altri tab: filtra per categoria, ordine stabile.
  */
 function getGridItems(items: CollectionRow[], activeKey: string, limit: number): CollectionRow[] {
+  const visibleItems = items.filter((card) => !isCollection(card) || hasLinkedItems(card, items));
   const base = activeKey === "all"
-    ? items.filter((card) => parentIdOf(card) == null)
-    : items.filter((card) => card.category === activeKey);
+    ? visibleItems.filter((card) => parentIdOf(card) == null)
+    : visibleItems.filter((card) => card.category === activeKey);
 
   if (activeKey === "all") {
     const collections = base.filter((card) => isCollection(card)).sort((a, b) => a.sort_order - b.sort_order);
