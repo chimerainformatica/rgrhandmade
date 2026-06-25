@@ -110,6 +110,11 @@ export const en = {
     addrLines: [
       "52100 Arezzo - Italy",
     ],
+    colContact: "Contact",
+    contact: [
+      ["Email", "info@rgrhandmade.it"],
+      ["Phone", "0575-299101"],
+    ] as [string, string][],
     form: {
       eyebrow: "Contact",
       title: "Write to us.",

@@ -104,6 +104,36 @@ export function SiteFooter({ lang }: SiteFooterProps) {
               </ul>
             </div>
 
+            {/* Contact */}
+            <div>
+              <h4 className="font-sans text-[11px] tracking-[0.22em] uppercase text-gold font-semibold mb-4 m-0">
+                {t.footer.colContact}
+              </h4>
+              <ul className="list-none p-0 m-0 grid gap-2">
+                {t.footer.contact.map(([label, value]) => (
+                  <li key={label}>
+                    {label === "Email" ? (
+                      <a
+                        href={`mailto:${value}`}
+                        title={`${label} - RGR Handmade`}
+                        className="text-[14px] text-ivory/78 hover:text-gold-light transition-colors duration-200 max-[480px]:text-[13px]"
+                      >
+                        {value}
+                      </a>
+                    ) : (
+                      <a
+                        href={`tel:${value.replace(/[^0-9+]/g, "")}`}
+                        title={`${label} - RGR Handmade`}
+                        className="text-[14px] text-ivory/78 hover:text-gold-light transition-colors duration-200 max-[480px]:text-[13px]"
+                      >
+                        {value}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             {/* Explore */}
             <div>
               <h4 className="font-sans text-[11px] tracking-[0.22em] uppercase text-gold font-semibold mb-4 m-0">
