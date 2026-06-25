@@ -842,8 +842,8 @@ function PreviewModal({
           </svg>
         </button>
 
-        {/* Colonna sinistra: immagine principale (zoom-lente) + frecce + thumbnail circolari */}
-        <div className="flex flex-col gap-7 p-8 max-[520px]:gap-5 max-[520px]:p-5">
+        {/* Left column: main image (zoom-lens) + arrows + circular thumbnails */}
+        <div className="flex flex-col gap-7 p-4 max-[520px]:gap-5 max-[520px]:p-2">
           <div className="relative">
             <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] bg-white shadow-[0_26px_60px_rgba(40,30,18,0.16)]">
               {imageError ? (
@@ -905,7 +905,7 @@ function PreviewModal({
                       <CollectionImage card={item} variant="thumb" />
                     </span>
                     <span className={"font-sans text-[10px] uppercase tracking-[0.16em] " + (isActive ? "text-gold" : "text-taupe")}>
-                      {CATEGORY_LABELS[item.category]?.[lang] ?? item.category}
+                      {item.title}
                     </span>
                   </button>
                 );
