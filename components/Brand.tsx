@@ -1,8 +1,7 @@
-// Logo RGR con supporto per inversione colore (per sfondi scuri) e classi responsive
-// Breakpoint mobile: h-11 desktop → h-4 (640px) → h-3 (375px)
+// Logo RGR con supporto per inversione colore (per sfondi scuri) e classi responsive.
 export function BrandLogo({
   inverted = false,
-  className = "h-11 max-[640px]:h-4 max-[375px]:h-3"
+  className = "h-11 max-[640px]:h-7 max-[375px]:h-6"
 }: {
   inverted?: boolean;
   className?: string;
@@ -12,8 +11,7 @@ export function BrandLogo({
       <img
         src="/assets/rgr/logo-rgr.png"
         alt="R.G.R. Handmade"
-        // Combina classi custom con w-auto per preservare aspect ratio, animazione smooth su cambio altezza
-        // Responsive: mobile (640px) = 50% altezza desktop, extra-small (375px) = 27% altezza desktop
+        // Combina classi custom con w-auto per preservare aspect ratio.
         className={`${className} w-auto block transition-[filter,height] duration-300`}
         // Filtro dorato per testi su sfondi scuri — mantiene identità brand
         style={inverted

@@ -122,23 +122,28 @@ export function MobileMenu({
           role="dialog"
           aria-modal="true"
           aria-label="Menu di navigazione"
-          className="fixed inset-0 z-60 bg-ivory flex flex-col overflow-y-auto overscroll-contain"
-          style={{ backgroundImage: GRAIN_SVG, backgroundSize: "256px 256px" }}
+          className="fixed inset-0 z-60 flex flex-col overflow-y-auto overscroll-contain bg-ivory"
+          style={{
+            backgroundImage: GRAIN_SVG,
+            backgroundSize: "256px 256px",
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
           variants={overlayVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
         >
           {/* Riga logo + close button */}
-          <div className="flex items-center justify-between px-6 pt-6 pb-5 shrink-0">
+          <div className="flex shrink-0 items-center justify-between px-6 pb-5 pt-6 max-[420px]:px-5 max-[420px]:pb-4 max-[420px]:pt-5">
             <a
               href={`${linkBase}#home`}
               onClick={onClose}
               title="RGR Handmade - home"
               aria-label="RGR Handmade — torna all'inizio"
-              className="flex flex-col items-center gap-0.5"
+              className="flex min-h-11 flex-col items-center justify-center gap-0.5"
             >
-              <BrandLogo className="h-9" />
+              <BrandLogo className="h-10 max-[420px]:h-8" />
               <span className="font-sans text-[8.5px] font-medium tracking-[0.28em] uppercase opacity-50 text-warm-black">
                 EST. 1989
               </span>
@@ -147,7 +152,7 @@ export function MobileMenu({
               type="button"
               onClick={onClose}
               aria-label="Chiudi menu"
-              className="w-10 h-10 rounded-full border border-gold/60 flex items-center justify-center text-warm-black hover:bg-gold/8 transition-colors duration-200 shrink-0"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/60 text-warm-black transition-colors duration-200 hover:bg-gold/8"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
@@ -175,7 +180,7 @@ export function MobileMenu({
                   title={`${label} - RGR Handmade`}
                   onClick={onClose}
                   variants={itemVariants}
-                  className={`flex items-center justify-between py-5 border-b border-hairline transition-opacity duration-200 ${
+                  className={`flex min-h-16 items-center justify-between border-b border-hairline py-5 transition-opacity duration-200 max-[420px]:min-h-14 max-[420px]:py-4 ${
                     activeSection === key ? "opacity-100" : "opacity-60 hover:opacity-95"
                   }`}
                 >
@@ -189,7 +194,7 @@ export function MobileMenu({
                     />
                     <span
                       className="font-serif font-light tracking-[0.08em] text-warm-black"
-                      style={{ fontSize: "clamp(26px, 7vw, 36px)" }}
+                      style={{ fontSize: "clamp(23px, 7vw, 36px)" }}
                     >
                       {label}
                     </span>
@@ -204,7 +209,7 @@ export function MobileMenu({
             {/* Selettore lingua IT/EN */}
             <motion.div
               variants={itemVariants}
-              className="flex justify-center mt-8"
+              className="mt-8 flex justify-center max-[420px]:mt-6"
             >
               <div
                 className="inline-flex rounded-full border border-hairline overflow-hidden"
@@ -219,7 +224,7 @@ export function MobileMenu({
                     aria-selected={lang === l}
                     title={l === "it" ? "Italiano" : "English"}
                     onClick={() => setLang(l)}
-                    className={`flex items-center gap-1.75 px-3.5 py-2.25 font-sans text-[10.5px] font-semibold tracking-[0.14em] uppercase transition-all duration-200 ${
+                    className={`flex min-h-11 items-center gap-1.75 px-3.5 py-2.25 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] transition-all duration-200 ${
                       lang === l
                         ? "bg-warm-black text-ivory"
                         : "bg-transparent text-warm-black/60 hover:text-warm-black"
@@ -237,18 +242,18 @@ export function MobileMenu({
             {/* Frase emozionale */}
             <motion.p
               variants={itemVariants}
-              className="font-serif italic text-[15px] text-taupe text-center mt-6 px-4 tracking-wide leading-relaxed"
+              className="mt-6 px-4 text-center font-serif text-[15px] italic leading-relaxed tracking-wide text-taupe max-[420px]:mt-5"
             >
               Tradizione orafa, eleganza senza tempo.
             </motion.p>
 
             {/* CTA CONTATTI */}
-            <motion.div variants={itemVariants} className="mt-8 pb-10">
+            <motion.div variants={itemVariants} className="mt-8 pb-10 max-[420px]:mt-6 max-[420px]:pb-8">
               <a
                 href={`${linkBase}#contact`}
                 title={`${ctaLabel} - RGR Handmade`}
                 onClick={onClose}
-                className="w-full border border-gold text-warm-black flex items-center justify-center gap-3 py-5 font-serif tracking-[0.2em] uppercase hover:bg-gold hover:text-warm-white transition-colors duration-300"
+                className="flex min-h-14 w-full items-center justify-center gap-3 border border-gold py-5 font-serif uppercase tracking-[0.2em] text-warm-black transition-colors duration-300 hover:bg-gold hover:text-warm-white max-[420px]:py-4"
                 style={{ fontSize: "clamp(15px, 4.5vw, 18px)" }}
               >
                 {ctaLabel}

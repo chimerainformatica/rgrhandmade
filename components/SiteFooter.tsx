@@ -58,7 +58,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                   rel="noopener noreferrer"
                   title="Instagram - RGR Handmade"
                   aria-label="Instagram - RGR Handmade"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 text-ivory/62 transition-all duration-200 hover:-translate-y-px hover:border-gold hover:bg-gold hover:text-warm-black"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/18 text-ivory/62 transition-all duration-200 hover:-translate-y-px hover:border-gold hover:bg-gold hover:text-warm-black"
                 >
                   <Instagram size={18} strokeWidth={1.8} aria-hidden="true" />
                 </a>
@@ -68,7 +68,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                   rel="noopener noreferrer"
                   title="Facebook - RGR Handmade"
                   aria-label="Facebook - RGR Handmade"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 text-ivory/62 transition-all duration-200 hover:-translate-y-px hover:border-gold hover:bg-gold hover:text-warm-black"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/18 text-ivory/62 transition-all duration-200 hover:-translate-y-px hover:border-gold hover:bg-gold hover:text-warm-black"
                 >
                   <Facebook size={18} strokeWidth={1.8} aria-hidden="true" />
                 </a>
@@ -96,7 +96,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                     href={MAPS_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-sans text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-light transition-colors duration-200 hover:text-gold"
+                    className="inline-flex min-h-11 items-center font-sans text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-light transition-colors duration-200 hover:text-gold"
                   >
                     Google Maps
                   </a>
@@ -145,7 +145,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                     <a
                       href={href}
                       title={`${label} - RGR Handmade`}
-                      className="text-[14px] text-ivory/78 hover:text-gold-light transition-colors duration-200 max-[480px]:text-[13px] max-[480px]:inline-block max-[480px]:py-1"
+                      className="inline-flex min-h-9 items-center text-[14px] text-ivory/78 transition-colors duration-200 hover:text-gold-light max-[480px]:min-h-11 max-[480px]:text-[13px]"
                     >
                       {label}
                     </a>
@@ -165,7 +165,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                     <a
                       href={href === "#admin" ? "/admin/login?next=/admin" : href}
                       title={`${label} - RGR Handmade`}
-                      className="text-[14px] text-ivory/78 hover:text-gold-light transition-colors duration-200 max-[480px]:text-[13px] max-[480px]:inline-block max-[480px]:py-1"
+                      className="inline-flex min-h-9 items-center text-[14px] text-ivory/78 transition-colors duration-200 hover:text-gold-light max-[480px]:min-h-11 max-[480px]:text-[13px]"
                     >
                       {label}
                     </a>

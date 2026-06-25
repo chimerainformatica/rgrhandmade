@@ -59,7 +59,7 @@ function Btn({
   title?: string;
 }) {
   const base =
-    "inline-flex items-center gap-3 px-7 py-4 font-sans text-[12.5px] font-medium tracking-[0.16em] uppercase rounded-full border transition-all duration-300 ease-out hover:-translate-y-px whitespace-nowrap";
+    "inline-flex min-h-11 items-center justify-center gap-3 px-7 py-4 font-sans text-[12.5px] font-medium tracking-[0.16em] uppercase rounded-full border transition-all duration-300 ease-out hover:-translate-y-px whitespace-nowrap";
   const variants = {
     primary: "bg-warm-black text-warm-white border-warm-black hover:bg-dark-brown hover:border-dark-brown",
     ghost:   "bg-transparent text-warm-black border-warm-black hover:bg-warm-black hover:text-warm-white",
@@ -99,7 +99,7 @@ export function HomePage({
       <SiteHeader lang={lang} setLang={setLang} mode="spy" />
 
       {/* ============ HERO ============ */}
-      <section id="home" className="relative min-h-screen h-screen bg-warm-black text-ivory overflow-hidden max-[640px]:h-[60vh] max-[640px]:min-h-[60vh] max-[375px]:h-[50vh] max-[375px]:min-h-[50vh]">
+      <section id="home" className="relative h-screen min-h-screen overflow-hidden bg-warm-black text-ivory max-[640px]:h-[72svh] max-[640px]:min-h-[620px] max-[390px]:h-[68svh] max-[390px]:min-h-[560px]">
         {/* Hero background — video */}
         <video
           className="absolute inset-0 z-0 w-full h-full object-cover object-center"
@@ -128,15 +128,17 @@ export function HomePage({
 
 
         {/* Hero text */}
-        <div className="absolute inset-x-8 bottom-20 z-[2] mx-auto max-w-[1180px] lg:bottom-[130px] max-[768px]:bottom-12 max-[640px]:bottom-8 max-[640px]:inset-x-4">
-          <div className="flex items-center gap-3.5 mb-8 max-[640px]:mb-5">
-            <GoldLine />
-            <span className="font-sans text-[15px] font-bold tracking-[0.22em] uppercase text-gold-light max-[640px]:text-[12px]">
-              {t.hero.eyebrow}
-            </span>
-          </div>
+        <div className="absolute inset-x-8 bottom-20 z-[2] mx-auto max-w-[1180px] lg:bottom-[130px] max-[768px]:bottom-12 max-[640px]:inset-x-4 max-[640px]:bottom-16">
+          {t.hero.eyebrow && (
+            <div className="flex items-center gap-3.5 mb-8 max-[640px]:mb-5">
+              <GoldLine />
+              <span className="font-sans text-[15px] font-bold tracking-[0.22em] uppercase text-gold-light max-[640px]:text-[12px]">
+                {t.hero.eyebrow}
+              </span>
+            </div>
+          )}
           <h1 className="font-serif font-light leading-[0.92] tracking-[-0.018em] text-warm-white mb-7 max-[640px]:mb-4"
-            style={{ fontSize: "clamp(28px,7vw,140px)", textShadow: "0 2px 30px rgba(0,0,0,.45)" }}>
+            style={{ fontSize: "clamp(36px,12vw,140px)", textShadow: "0 2px 30px rgba(0,0,0,.45)" }}>
             {t.hero.titlePre}{" "}
             <em className="block not-italic font-light"
               style={{
@@ -151,16 +153,16 @@ export function HomePage({
               {t.hero.titleEm}
             </em>
           </h1>
-          <p className="font-sans font-light text-white/88 max-w-[520px] mb-10 max-[640px]:text-[13px] max-[375px]:text-[12px] max-[640px]:mb-5"
+          <p className="mb-10 max-w-[520px] font-sans font-light text-white/88 max-[640px]:mb-6 max-[640px]:text-[13px] max-[375px]:text-[12px]"
             style={{ fontSize: "clamp(14px,1vw,18px)", lineHeight: 1.65, textShadow: "0 1px 14px rgba(0,0,0,.5)" }}>
             {t.hero.lede}
           </p>
           <div className="flex gap-4 flex-wrap max-[640px]:flex-col max-[640px]:gap-2.5">
             <Btn href="#about" variant="primary" title={`${t.cta.primary} - RGR Handmade`}
-              className="!bg-gold !border-gold !text-warm-black hover:!bg-dark-brown hover:!border-dark-white hover:!text-warm-white max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! max-[375px]:!text-[11px]">
+              className="!bg-gold !border-gold !text-warm-black hover:!bg-dark-brown hover:!border-dark-white hover:!text-warm-white max-[640px]:!w-full max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! max-[375px]:!text-[11px]">
               {t.cta.primary} <Arrow size={12} />
             </Btn>
-            <Btn href="#collections" variant="on-dark" title={`${t.cta.secondary} - RGR Handmade`} className="max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! hover:!text-warm-black max-[375px]:!text-[11px]">{t.cta.secondary}</Btn>
+            <Btn href="#collections" variant="on-dark" title={`${t.cta.secondary} - RGR Handmade`} className="max-[640px]:!w-full max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! hover:!text-warm-black max-[375px]:!text-[11px]">{t.cta.secondary}</Btn>
           </div>
         </div>
 

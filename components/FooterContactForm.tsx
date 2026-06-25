@@ -30,7 +30,7 @@ type FooterContactFormProps = {
 };
 
 const fieldClass =
-  "h-12 w-full border border-white/12 bg-[#201b17] px-4 font-sans text-[14px] text-ivory outline-none transition-colors duration-200 placeholder:text-ivory/30 focus:border-gold/80 focus:bg-[#262018]";
+  "min-h-12 w-full border border-white/12 bg-[#201b17] px-4 font-sans text-[14px] text-ivory outline-none transition-colors duration-200 placeholder:text-ivory/30 focus:border-gold/80 focus:bg-[#262018]";
 const labelClass = "grid gap-2";
 const labelTextClass =
   "font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light";
@@ -47,7 +47,7 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
       <div className="pointer-events-none absolute inset-y-12 left-[42%] w-px bg-gradient-to-b from-transparent via-gold/18 to-transparent max-lg:hidden" />
 
       <div className="grid grid-cols-[0.78fr_1.22fr] max-lg:grid-cols-1">
-        <aside className="relative grid content-between gap-10 p-10 pr-12 max-[640px]:p-6">
+        <aside className="relative grid content-between gap-10 p-10 pr-12 max-[640px]:gap-7 max-[640px]:p-6">
           <div>
             <div className="mb-6 flex items-center gap-3.5">
               <GoldLine onDark />
@@ -55,7 +55,7 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
                 {copy.eyebrow}
               </span>
             </div>
-            <h3 className="m-0 max-w-[10ch] font-serif text-[clamp(42px,5vw,72px)] font-normal leading-[0.96] text-ivory">
+            <h3 className="m-0 max-w-[10ch] font-serif text-[clamp(38px,12vw,72px)] font-normal leading-[0.96] text-ivory">
               {copy.title}
             </h3>
             <p className="mt-6 max-w-[430px] text-[15px] leading-[1.75] text-ivory/62">
@@ -135,7 +135,7 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
                 type="checkbox"
                 required
                 value="Accettata"
-                className="mt-0.5 h-4 w-4 shrink-0 accent-gold"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
               />
               <span>{copy.privacy}</span>
             </label>
@@ -143,7 +143,7 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
             <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">
               <button
                 type="submit"
-                className="inline-flex items-center gap-3 rounded-full border border-gold bg-gold px-7 py-3.5 font-sans text-[12px] font-semibold uppercase tracking-[0.16em] text-warm-black transition-all duration-300 hover:-translate-y-px hover:border-gold-light hover:bg-gold-light"
+                className="inline-flex min-h-11 items-center justify-center gap-3 rounded-full border border-gold bg-gold px-7 py-3.5 font-sans text-[12px] font-semibold uppercase tracking-[0.16em] text-warm-black transition-all duration-300 hover:-translate-y-px hover:border-gold-light hover:bg-gold-light max-[420px]:w-full"
               >
                 {copy.submit} <Arrow size={12} />
               </button>
