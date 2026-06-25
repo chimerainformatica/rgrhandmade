@@ -30,10 +30,10 @@ const CATEGORY_LABELS: Record<string, { it: string; en: string }> = {
 
 const ALL_LABEL = { it: "Tutte", en: "All" };
 
-/** Categoria legacy RGR usata solo come fallback per dati precedenti alla standardizzazione Collection. */
+/** Legacy RGR category used only as fallback for data predating Collection standardization. */
 const PARURE_CATEGORY = "Parure";
 
-/** Fattore di ingrandimento della lente sull'immagine principale dell'anteprima. */
+/** Zoom scale factor for the magnifying lens on the main preview image. */
 const ZOOM_SCALE = 2.1;
 
 interface Props {
@@ -60,12 +60,12 @@ function normalizeSelectedItems(items: MediaCollectionItem[]): CollectionRow[] {
   }));
 }
 
-/* Logica collection / randomizzazione
- * Modello dati:
- *  - collection    -> item_type === "collection" (contenitore editoriale)
- *  - elemento      -> parent_id === id-della-collection
- *  - articolo solo -> item_type === "item" && parent_id === null
- * Nel tab "Tutte" mostriamo collection + articoli singoli, escludendo i figli.
+/* Collection logic / randomization
+ * Data model:
+ *  - collection    -> item_type === "collection" (editorial container)
+ *  - element       -> parent_id === id-of-the-collection
+ *  - single item   -> item_type === "item" && parent_id === null
+ * In the "All" tab we show collections + single items, excluding children.
  */
 
 function isCollection(card: CollectionRow): boolean {
@@ -128,9 +128,9 @@ function itemCategoryLabel(category: string, lang: Lang): string {
 }
 
 /**
- * Costruisce gli elementi da mostrare nella griglia:
- *  - tab "Tutte": collection + articoli singoli, mescolati;
- *  - altri tab: filtra per categoria, ordine stabile.
+ * Builds the items to display in the grid:
+ *  - "All" tab: collections + single items, mixed together;
+ *  - other tabs: filter by category, stable order.
  */
 function getGridItems(items: CollectionRow[], activeKey: string, limit: number): CollectionRow[] {
   const visibleItems = items.filter((card) => !isCollection(card) || hasLinkedItems(card, items));
@@ -186,10 +186,10 @@ function CollectionImage({
 }
 
 /**
- * Blocco editoriale di una collection per il tab "Tutte":
- * a sinistra hero image con overlay gradient + testo (eyebrow, titolo italic,
- * descrizione, CTA), a destra mini-grid 2x2 degli elementi del set.
- * Layout: grid 1.05fr / 1.1fr, altezza fissa ~390px.
+ * Editorial block for a collection in the "All" tab:
+ * left side: hero image with gradient overlay + text (eyebrow, italic title,
+ * description, CTA), right side: 2x2 mini-grid of the set elements.
+ * Layout: grid 1.05fr / 1.1fr, fixed height ~390px.
  */
 function CollectionBlock({
   head,
@@ -198,6 +198,7 @@ function CollectionBlock({
   ctaLabel,
   showRefBadge,
   onOpen,
+  reverse = false,
   showMiniOverlay = false,
 }: {
   head: CollectionRow;
@@ -206,55 +207,60 @@ function CollectionBlock({
   ctaLabel: string;
   showRefBadge: boolean;
   onOpen: (head: CollectionRow, view: CollectionRow) => void;
-  /** Mostra la vecchia label categoria sovrapposta all'immagine (default: nascosta) */
+  reverse?: boolean;
+  /** Shows the old category label overlaid on the image (default: hidden) */
   showMiniOverlay?: boolean;
 }) {
   const elements = getCollectionElements(head, allItems).slice(0, 4);
   const hasGallery = elements.length > 0;
+  const galleryLayoutClass = elements.length === 1
+    ? "grid-cols-1 grid-rows-1"
+    : elements.length === 2
+      ? "grid-cols-2 grid-rows-1 max-[760px]:grid-cols-1 max-[760px]:grid-rows-2"
+      : "grid-cols-2 grid-rows-2";
 
   return (
     <section
       className={[
         "grid items-stretch",
-        hasGallery ? "grid-cols-[1.05fr_1.1fr]" : "grid-cols-1",
-        "gap-[8px]",
-        "max-[900px]:gap-[6px]",
-        "max-[640px]:grid-cols-1 max-[640px]:gap-[6px]",
+        hasGallery ? "grid-cols-[1.02fr_1.08fr]" : "grid-cols-1",
+        "gap-3 max-[900px]:gap-2",
+        "max-[760px]:grid-cols-1",
       ].join(" ")}
     >
-      {/* Colonna sinistra: hero image con overlay */}
+      {/* Left column: hero image with overlay */}
       <button
         type="button"
         onClick={() => onOpen(head, head)}
-        className="group relative overflow-hidden border bg-[#e8dfd0] text-left aspect-[3/4] max-[640px]:aspect-auto max-[640px]:min-h-[420px]"
+        className={`group relative overflow-hidden border bg-[#e8dfd0] text-left aspect-[3/4] shadow-[0_18px_48px_rgba(51,38,25,0.16)] max-[760px]:order-first max-[640px]:aspect-auto max-[640px]:min-h-[420px] ${reverse && hasGallery ? "order-2" : ""}`}
         style={{ borderColor: "#d8c8b4" }}
         aria-label={(lang === "it" ? "Apri anteprima " : "Open preview ") + head.title}
       >
-        {/* Immagine della collezione (senza zoom) */}
+        {/* Collection image (without zoom) */}
         <div className="absolute inset-0">
           <CollectionImage card={head} variant="preview" />
         </div>
 
-        {/* Overlay gradiente dal basso */}
+        {/* Gradient overlay from bottom */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to top, rgba(20,18,16,0.65) 0%, rgba(20,18,16,0.25) 45%, rgba(20,18,16,0) 100%)",
+              "linear-gradient(to top, rgba(20,18,16,0.72) 0%, rgba(20,18,16,0.28) 45%, rgba(20,18,16,0.05) 100%)",
           }}
         />
 
-        {/* Testo in basso a sinistra */}
+        {/* Text at bottom left */}
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-start px-7 pb-7 max-[520px]:px-5 max-[520px]:pb-5">
-          {/* Eyebrow "COLLECTION RGR" */}
+          {/* Eyebrow "RGR COLLECTION" */}
           <span
             className="mb-2 font-sans font-semibold uppercase"
             style={{ fontSize: "12px", letterSpacing: "2.5px", color: "#c0a16f" }}
           >
-            Collection RGR
+            RGR COLLECTION
           </span>
 
-          {/* Titolo collection: italic, grande */}
+          {/* Collection title: italic, large */}
           <h3
             className="m-0 font-serif font-normal italic leading-none text-white"
             style={{ fontSize: "clamp(38px, 4.5vw, 52px)" }}
@@ -262,7 +268,7 @@ function CollectionBlock({
             {head.title}
           </h3>
 
-          {/* Descrizione collection */}
+          {/* Collection description */}
           {shouldShowDescription(head) && (
             <p
               className="mt-2 font-serif text-white/90 max-w-xs max-[520px]:hidden"
@@ -272,7 +278,7 @@ function CollectionBlock({
             </p>
           )}
 
-          {/* CTA */}
+          {/* Call-to-Action */}
           <div
             onClick={(e) => {
               e.stopPropagation();
@@ -281,8 +287,8 @@ function CollectionBlock({
                 contactForm.scrollIntoView({ behavior: "smooth", block: "start" });
               }
             }}
-            className="mt-4 font-sans font-semibold uppercase transition-opacity duration-200 hover:opacity-70 cursor-pointer inline-block"
-            style={{ fontSize: "12px", letterSpacing: "2px", color: "#c0a16f" }}
+            className="mt-5 inline-flex items-center border border-gold/55 bg-warm-black/18 px-4 py-2 font-sans font-semibold uppercase text-gold-light backdrop-blur-sm transition-all duration-200 hover:border-gold-light hover:bg-warm-black/32 hover:text-ivory"
+            style={{ fontSize: "11px", letterSpacing: "1.8px" }}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -300,34 +306,33 @@ function CollectionBlock({
         </div>
       </button>
 
-      {/* Colonna destra: mini-grid che riempie esattamente l'altezza dell'hero */}
+      {/* Right column: mini-grid that fills exactly the height of the hero */}
       {hasGallery && (
-        <div className="grid h-full gap-[8px] max-[640px]:gap-[6px]"
-          style={{
-            gridTemplateColumns: elements.length === 1 ? "1fr" : "1fr 1fr",
-            gridTemplateRows: elements.length <= 2 ? "1fr" : "1fr 1fr",
-          }}
+        <div
+          className={`grid h-full min-h-[520px] gap-3 max-[900px]:gap-2 max-[760px]:min-h-0 ${galleryLayoutClass} ${reverse ? "order-1" : ""}`}
         >
           {elements.map((item, idx) => {
             const isWide = elements.length === 3 && idx === 2;
             const colSpan = isWide ? "col-span-2" : "";
-            const imageInset = "p-8 max-[980px]:p-6 max-[640px]:p-5";
+            const imageInset = elements.length === 1
+              ? "p-10 max-[980px]:p-7 max-[640px]:p-5"
+              : "p-5 max-[980px]:p-4 max-[640px]:p-4";
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => onOpen(head, item)}
-                className={`group relative flex flex-col overflow-hidden bg-[#f6efe5] text-left ${colSpan}`}
-                style={{ border: "1px solid #d8c8b4" }}
+                className={`group relative flex min-h-[250px] flex-col overflow-hidden bg-[#fbf8f1] text-left shadow-[0_12px_28px_rgba(60,44,28,0.08)] transition-transform duration-300 hover:-translate-y-0.5 max-[640px]:min-h-[230px] ${colSpan}`}
+                style={{ border: "1px solid rgba(216,200,180,0.72)" }}
                 aria-label={(lang === "it" ? "Apri anteprima " : "Open preview ") + item.title}
               >
-                {/* Immagine */}
-                <div className="relative flex-1 overflow-hidden bg-white">
+                {/* Image */}
+                <div className="relative flex-1 overflow-hidden bg-[#fffdf8]">
                   <div className={`absolute inset-0 ${imageInset} transition-transform duration-500 ease-out group-hover:scale-[1.04]`}>
                     <CollectionImage card={item} variant="thumb" fit="contain" />
                   </div>
 
-                  {/* Hover overlay con "Anteprima" */}
+                  {/* Hover overlay with "Preview" */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all duration-300 group-hover:bg-black/15">
                     <span
                       className="font-serif italic tracking-wide text-white translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
@@ -337,7 +342,7 @@ function CollectionBlock({
                     </span>
                   </div>
 
-                  {/* Titolo overlay */}
+                  {/* Title overlay */}
                   {showMiniOverlay && (
                     <span
                       className="absolute bottom-0 left-0 right-0 px-[18px] py-[14px] font-serif"
@@ -352,14 +357,17 @@ function CollectionBlock({
                   )}
                 </div>
 
-                {/* Footer: ref + titolo */}
-                <div className="flex shrink-0 flex-col gap-[2px] px-3 py-2.5 bg-[#f6efe5] border-t border-[#d8c8b4]/40">
-                  {showRefBadge && (
-                    <span className="text-[10px] tracking-[0.2em] uppercase text-gold font-medium">{item.ref}</span>
-                  )}
-                  <span className="font-serif text-[14px] font-normal leading-[1.2] text-warm-black">
-                    {item.title}
-                  </span>
+                {/* Footer: ref + title */}
+                <div className="flex shrink-0 items-end justify-between gap-3 border-t border-[#d8c8b4]/35 bg-[#f7f0e6]/82 px-4 py-3">
+                  <div className="min-w-0">
+                    {showRefBadge && (
+                      <span className="block text-[10px] uppercase text-gold font-semibold" style={{ letterSpacing: "0.18em" }}>{item.ref}</span>
+                    )}
+                    <span className="block truncate font-serif text-[15px] font-normal leading-[1.2] text-warm-black">
+                      {item.title}
+                    </span>
+                  </div>
+                  <span className="hidden h-px w-8 shrink-0 bg-gold/35 min-[900px]:block" aria-hidden="true" />
                 </div>
               </button>
             );
@@ -370,66 +378,7 @@ function CollectionBlock({
   );
 }
 
-/** Card compatta per la griglia iniziale delle collezioni. */
-function CollectionGridCard({
-  head,
-  lang,
-  onOpen,
-  index,
-}: {
-  head: CollectionRow;
-  lang: Lang;
-  onOpen: (head: CollectionRow) => void;
-  index: number;
-}) {
-  return (
-    <motion.button
-      type="button"
-      onClick={() => onOpen(head)}
-      className="group relative w-full overflow-hidden bg-[#e8dfd0] text-left"
-      style={{ aspectRatio: "3/4", border: "1px solid #d8c8b4" }}
-      aria-label={(lang === "it" ? "Apri collezione " : "Open collection ") + head.title}
-      initial={{ opacity: 0, y: 22, filter: "blur(4px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      transition={{ delay: Math.min(index * 0.07, 0.4), duration: 0.6, ease: [0.2, 0.7, 0.2, 1] }}
-    >
-      <div className="absolute inset-0 transition-transform duration-[700ms] ease-out group-hover:scale-[1.04]">
-        <CollectionImage card={head} variant="preview" />
-      </div>
-
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(20,18,16,0.72) 0%, rgba(20,18,16,0.20) 55%, rgba(20,18,16,0) 100%)",
-        }}
-      />
-
-      <div className="absolute inset-x-0 bottom-0 flex flex-col items-start px-6 pb-6">
-        <span
-          className="mb-2 font-sans font-semibold uppercase"
-          style={{ fontSize: "11px", letterSpacing: "2.5px", color: "#c0a16f" }}
-        >
-          Collection RGR
-        </span>
-        <h3
-          className="m-0 font-serif font-normal italic leading-none text-white"
-          style={{ fontSize: "clamp(26px, 3vw, 38px)" }}
-        >
-          {head.title}
-        </h3>
-        <span
-          className="mt-3 font-sans font-semibold uppercase opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
-          style={{ fontSize: "11px", letterSpacing: "2px", color: "#c0a16f" }}
-        >
-          {lang === "it" ? "Scopri" : "Discover"} &rarr;
-        </span>
-      </div>
-    </motion.button>
-  );
-}
-
-/** Modal dettaglio collezione: immagine sinistra + griglia pezzi destra. */
+/** Collection detail modal: image on left + item grid on right. */
 function CollectionDetailModal({
   head,
   elements,
@@ -493,7 +442,7 @@ function CollectionDetailModal({
               className="font-sans font-semibold uppercase"
               style={{ fontSize: "11px", letterSpacing: "2.5px", color: "#c0a16f" }}
             >
-              Collection RGR
+              RGR COLLECTION
             </span>
             <h2
               className="mt-1 font-serif font-normal italic leading-none text-white"
@@ -1237,6 +1186,7 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
                           ctaLabel={lang === "it" ? "Richiedi informazioni" : "Request information"}
                           showRefBadge={config.show_ref_badge}
                           onOpen={openPreview}
+                          reverse={i % 2 === 1}
                         />
                       </motion.div>
                     ))}
