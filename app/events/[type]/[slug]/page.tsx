@@ -120,7 +120,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
     <main className="min-h-screen bg-ivory text-warm-black">
       <PageChrome initialLang={(event.lang as "it" | "en") ?? "it"} />
 
-      <section className="relative min-h-[620px] overflow-hidden border-b border-hairline-dark bg-warm-black pt-[150px] text-ivory max-[640px]:min-h-[560px] max-[640px]:pt-28">
+      <section className="relative min-h-[620px] overflow-hidden border-b border-hairline-dark bg-warm-black pt-[150px] text-ivory max-[640px]:min-h-[590px] max-[640px]:pt-28 max-[380px]:min-h-[540px]">
         <Image
           src={heroImage}
           alt={event.image_alt || event.title}
@@ -134,17 +134,17 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(23,20,17,0.72)_0%,rgba(23,20,17,0.38)_42%,rgba(23,20,17,0.88)_100%)]" aria-hidden="true" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(216,190,130,0.18),transparent_28%)]" aria-hidden="true" />
 
-        <div className="relative z-10 mx-auto flex min-h-[470px] max-w-[980px] flex-col justify-end px-8 pb-16 max-[640px]:min-h-[430px] max-[640px]:px-4 max-[640px]:pb-10">
-          <nav className="mb-7 font-sans text-[11px] uppercase text-ivory/76">
-            <Link href="/" className="transition-colors hover:text-gold-light">Home</Link>
+        <div className="relative z-10 mx-auto flex min-h-[470px] max-w-[980px] flex-col justify-end px-8 pb-16 max-[640px]:min-h-[450px] max-[640px]:px-4 max-[640px]:pb-10 max-[380px]:min-h-[410px]">
+          <nav className="mb-7 font-sans text-[11px] uppercase text-ivory/76 max-[640px]:mb-5">
+            <Link href="/" className="inline-flex min-h-11 items-center transition-colors hover:text-gold-light">Home</Link>
             <span className="mx-2">/</span>
-            <Link href="/#news" className="transition-colors hover:text-gold-light">News</Link>
+            <Link href="/#news" className="inline-flex min-h-11 items-center transition-colors hover:text-gold-light">News</Link>
             <span className="mx-2">/</span>
             <span className="text-ivory/88">{event.category}</span>
           </nav>
 
           <div className="mb-5 flex flex-wrap items-center gap-3">
-            <span className="border border-gold/50 bg-warm-black/30 px-3 py-1 font-sans text-[10.5px] font-semibold uppercase text-gold-light backdrop-blur">
+            <span className="inline-flex min-h-8 items-center border border-gold/50 bg-warm-black/30 px-3 py-1 font-sans text-[10.5px] font-semibold uppercase text-gold-light backdrop-blur">
               {event.category}
             </span>
             {event.venue && (
@@ -153,12 +153,12 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
             {date && <span className="ml-auto font-serif text-[17px] italic text-ivory/82 max-[640px]:ml-0">{date}</span>}
           </div>
 
-          <h1 className="max-w-[780px] text-balance font-serif text-[clamp(42px,7vw,86px)] font-normal leading-[0.95] text-ivory">
+          <h1 className="max-w-[780px] text-balance font-serif text-[clamp(38px,12vw,86px)] font-normal leading-[0.95] text-ivory">
             {event.title}
           </h1>
 
           {(event.excerpt || event.description) && (
-            <p className="mt-6 max-w-[58ch] font-sans text-[16px] leading-[1.75] text-ivory/78">
+            <p className="mt-6 max-w-[58ch] font-sans text-[16px] leading-[1.75] text-ivory/78 max-[640px]:text-[14.5px]">
               {event.excerpt ?? event.description}
             </p>
           )}
@@ -197,7 +197,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
                 href={event.cta_url}
                 target={event.cta_target || "_self"}
                 rel={event.cta_target === "_blank" ? "noopener noreferrer" : undefined}
-                className="inline-flex items-center gap-3 rounded-full border border-gold px-8 py-4 font-sans text-[12.5px] font-medium uppercase text-warm-black transition-all duration-300 hover:bg-gold hover:text-warm-white"
+                className="inline-flex min-h-11 items-center justify-center gap-3 rounded-full border border-gold px-8 py-4 font-sans text-[12.5px] font-medium uppercase text-warm-black transition-all duration-300 hover:bg-gold hover:text-warm-white max-[420px]:w-full"
               >
                 {event.cta_label}
               </a>
@@ -205,7 +205,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           )}
 
           <div className="mt-16 border-t border-hairline pt-8 text-center">
-            <Link href="/#news" className="inline-flex items-center gap-2 font-sans text-[12.5px] font-medium uppercase text-gold transition-colors hover:text-gold-deep">
+            <Link href="/#news" className="inline-flex min-h-11 items-center gap-2 font-sans text-[12.5px] font-medium uppercase text-gold transition-colors hover:text-gold-deep">
               {event.lang === "en" ? "Back to news" : "Torna alle news"}
             </Link>
           </div>

@@ -156,7 +156,7 @@ function EventCardsSkeleton() {
             className="shrink-0 basis-[calc((100%_-_48px)/3)] overflow-hidden border border-[#d8c8b4] bg-warm-white shadow-[0_22px_54px_rgba(48,35,24,0.10)] max-[1024px]:basis-[calc((100%_-_24px)/2)] max-[680px]:basis-full"
           >
             <div className="aspect-[16/10] skeleton" />
-            <div className="relative flex min-h-[330px] flex-col items-center px-9 pb-8 pt-12 max-[680px]:min-h-[300px] max-[680px]:px-6">
+            <div className="relative flex min-h-[330px] flex-col items-center px-9 pb-8 pt-12 max-[680px]:min-h-[280px] max-[680px]:px-6">
               <span className="absolute left-1/2 top-0 z-10 size-12 -translate-x-1/2 -translate-y-1/2 rounded-full skeleton" />
               <div className="h-8 w-2/3 rounded skeleton" />
               <div className="mt-4 h-3 w-3 rounded-sm skeleton" />
@@ -191,10 +191,10 @@ function NewsCard({ item, index, ctaLabel, lang }: { item: NewsRow; index: numbe
       <EventCardLink
         item={item}
         lang={lang}
-        className="group flex h-full min-h-[570px] flex-col overflow-hidden border border-[#d8c8b4] bg-warm-white text-center shadow-[0_22px_54px_rgba(48,35,24,0.16)] transition-transform duration-300 hover:-translate-y-1 max-[680px]:min-h-[520px]"
+        className="group flex h-full min-h-[570px] flex-col overflow-hidden border border-[#d8c8b4] bg-warm-white text-center shadow-[0_22px_54px_rgba(48,35,24,0.16)] transition-transform duration-300 hover:-translate-y-1 max-[680px]:min-h-[500px] max-[390px]:min-h-[470px]"
       >
         <div className="relative aspect-[16/10] overflow-hidden bg-[#F1ECE3]">
-          <div className="h-full w-full transition-transform duration-[1000ms] ease-out group-hover:scale-[1.035]">
+          <div className="relative h-full w-full transition-transform duration-[1000ms] ease-out group-hover:scale-[1.035]">
             <EventImage src={coverOf(item)} alt={item.image_alt || item.title} position={item.image_position} priority={index === 0} />
           </div>
         </div>
@@ -216,7 +216,7 @@ function NewsCard({ item, index, ctaLabel, lang }: { item: NewsRow; index: numbe
               {excerpt}
             </p>
           )}
-          <span className="mt-auto inline-flex items-center gap-5 border border-gold/60 px-8 py-3 font-sans text-[11px] font-semibold uppercase text-gold transition-colors duration-200 group-hover:bg-gold group-hover:text-warm-white max-[360px]:px-5">
+          <span className="mt-auto inline-flex min-h-11 items-center gap-5 border border-gold/60 px-8 py-3 font-sans text-[11px] font-semibold uppercase text-gold transition-colors duration-200 group-hover:bg-gold group-hover:text-warm-white max-[360px]:px-5">
             {ctaLabel}
             <ChevronRight size={14} strokeWidth={1.5} />
           </span>
@@ -358,7 +358,7 @@ export function VtxEventsSection({ config, lang }: Props) {
                   type="button"
                   onClick={() => scrollCarousel("prev")}
                   disabled={!canScrollLeft}
-                  className="grid size-14 place-items-center rounded-full border border-gold/55 bg-transparent text-warm-black transition-all duration-200 hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-35"
+                  className="grid size-14 min-h-11 min-w-11 place-items-center rounded-full border border-gold/55 bg-transparent text-warm-black transition-all duration-200 hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-35"
                   aria-label={lang === "it" ? "Eventi precedenti" : "Previous events"}
                 >
                   <ChevronLeft size={24} strokeWidth={1.8} />
@@ -367,7 +367,7 @@ export function VtxEventsSection({ config, lang }: Props) {
                   type="button"
                   onClick={() => scrollCarousel("next")}
                   disabled={!canScrollRight}
-                  className="grid size-14 place-items-center rounded-full border border-gold/55 bg-transparent text-warm-black transition-all duration-200 hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-35"
+                  className="grid size-14 min-h-11 min-w-11 place-items-center rounded-full border border-gold/55 bg-transparent text-warm-black transition-all duration-200 hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-35"
                   aria-label={lang === "it" ? "Eventi successivi" : "Next events"}
                 >
                   <ChevronRight size={24} strokeWidth={1.8} />

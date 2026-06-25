@@ -63,18 +63,18 @@ export function SiteHeader({
     "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
     onDark ? "text-ivory" : "text-warm-black",
     headerSolid
-      ? "bg-warm-white/78 backdrop-blur-[18px] backdrop-saturate-150 border-b border-hairline/70 shadow-[0_10px_30px_rgba(23,20,17,0.06)] py-3"
-      : "border-b border-transparent py-[18px]",
+      ? "bg-warm-white/82 backdrop-blur-[18px] backdrop-saturate-150 border-b border-hairline/70 shadow-[0_10px_30px_rgba(23,20,17,0.06)] py-3 max-[640px]:py-2.5"
+      : "border-b border-transparent py-[18px] max-[640px]:py-3",
   ].join(" ");
 
   return (
     <>
       <header className={headerCls}>
-        <div className={`${BOXED_CONTAINER} flex items-center justify-between`}>
+        <div className={`${BOXED_CONTAINER} flex min-h-11 items-center justify-between`}>
           {/* Brand */}
-          <a href={`${linkBase}#home`} title="RGR Handmade - home" aria-label="RGR Handmade" className="flex flex-col items-center gap-1 max-[640px]:gap-0.5" onClick={() => setMobileMenuOpen(false)}>
-            <BrandLogo inverted={onDark} className="h-9 max-[640px]:h-4 max-[375px]:h-3.5" />
-            <span className="font-sans text-[8.5px] font-medium tracking-[0.28em] uppercase opacity-65 max-[640px]:text-[8px]">
+          <a href={`${linkBase}#home`} title="RGR Handmade - home" aria-label="RGR Handmade" className="flex min-h-11 flex-col items-center justify-center gap-1 max-[640px]:gap-0.5" onClick={() => setMobileMenuOpen(false)}>
+            <BrandLogo inverted={onDark} className="h-9 max-[767px]:h-7 max-[375px]:h-6" />
+            <span className="font-sans text-[8.5px] font-medium tracking-[0.28em] uppercase opacity-65 max-[767px]:text-[7.5px] max-[767px]:tracking-[0.22em]">
               {t.header.since}
             </span>
           </a>
@@ -143,7 +143,7 @@ export function SiteHeader({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden flex flex-col gap-1.5 w-6 h-6 justify-center p-0 bg-transparent border-0"
+              className="flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded-full border border-transparent bg-transparent p-0 transition-colors duration-200 hover:border-gold/35 lg:hidden"
               aria-label={mobileMenuOpen ? "Chiudi menu" : "Apri menu"}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-menu-overlay"

@@ -232,7 +232,7 @@ function CollectionBlock({
       <button
         type="button"
         onClick={() => onOpen(head, head)}
-        className={`group relative overflow-hidden border bg-[#e8dfd0] text-left aspect-[3/4] shadow-[0_18px_48px_rgba(51,38,25,0.16)] max-[760px]:order-first max-[640px]:aspect-auto max-[640px]:min-h-[420px] ${reverse && hasGallery ? "order-2" : ""}`}
+        className={`group relative overflow-hidden border bg-[#e8dfd0] text-left aspect-[3/4] shadow-[0_18px_48px_rgba(51,38,25,0.16)] max-[760px]:order-first max-[640px]:aspect-auto max-[640px]:min-h-[380px] max-[380px]:min-h-[340px] ${reverse && hasGallery ? "order-2" : ""}`}
         style={{ borderColor: "#d8c8b4" }}
         aria-label={(lang === "it" ? "Apri anteprima " : "Open preview ") + head.title}
       >
@@ -251,7 +251,7 @@ function CollectionBlock({
         />
 
         {/* Text at bottom left */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-start px-7 pb-7 max-[520px]:px-5 max-[520px]:pb-5">
+          <div className="absolute inset-x-0 bottom-0 flex flex-col items-start px-7 pb-7 max-[520px]:px-5 max-[520px]:pb-5">
           {/* Eyebrow "RGR COLLECTION" */}
           <span
             className="mb-2 font-sans font-semibold uppercase"
@@ -322,7 +322,7 @@ function CollectionBlock({
                 key={item.id}
                 type="button"
                 onClick={() => onOpen(head, item)}
-                className={`group relative flex min-h-[250px] flex-col overflow-hidden bg-[#fbf8f1] text-left shadow-[0_12px_28px_rgba(60,44,28,0.08)] transition-transform duration-300 hover:-translate-y-0.5 max-[640px]:min-h-[230px] ${colSpan}`}
+                className={`group relative flex min-h-[250px] flex-col overflow-hidden bg-[#fbf8f1] text-left shadow-[0_12px_28px_rgba(60,44,28,0.08)] transition-transform duration-300 hover:-translate-y-0.5 max-[640px]:min-h-[210px] max-[380px]:min-h-[190px] ${colSpan}`}
                 style={{ border: "1px solid rgba(216,200,180,0.72)" }}
                 aria-label={(lang === "it" ? "Apri anteprima " : "Open preview ") + item.title}
               >
@@ -1083,9 +1083,9 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
   const isEmptyMock = !loading && !gridLoading && (selectedItems ?? collections).length === 0;
 
   return (
-    <section id="collections" className="lg:py-[112px] bg-ivory">
+    <section id="collections" className="bg-ivory py-16 lg:py-[112px] max-[640px]:py-14">
       <div className={BOXED_CONTAINER}>
-        <Reveal className="flex items-end justify-between gap-10 mb-10">
+        <Reveal className="mb-10 flex items-end justify-between gap-10 max-[640px]:mb-8">
           {isEmptyMock ? (
             <CatalogueHeaderSkeleton />
           ) : (
@@ -1100,7 +1100,7 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
               <WireReveal className="font-serif font-normal text-[clamp(24px,5vw,64px)] leading-[1.02] tracking-[-0.005em] text-balance mt-4 mb-4">
                 {config.title_pre[lang]} <em className="italic text-gold">{config.title_em[lang]}</em>
               </WireReveal>
-              <p className="text-[15.5px] text-taupe leading-[1.7] max-w-[500px] m-0">
+              <p className="m-0 max-w-[500px] text-[15.5px] leading-[1.7] text-taupe max-[640px]:text-[14px]">
                 {config.lede[lang]}
               </p>
             </div>
@@ -1125,7 +1125,7 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
                       setGridLoading(true);
                       setTab(i);
                     }}
-                    className={`inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-[11.5px] tracking-[0.16em] uppercase border whitespace-nowrap shrink-0 snap-start transition-all duration-200 ${
+                    className={`inline-flex min-h-11 shrink-0 snap-start items-center gap-1.5 rounded-full border px-5 py-2.5 text-[11.5px] uppercase tracking-[0.16em] whitespace-nowrap transition-all duration-200 ${
                       i === safeTab
                         ? "bg-warm-black text-warm-white border-warm-black"
                         : "bg-transparent text-taupe border-hairline hover:text-warm-black hover:border-warm-black"
