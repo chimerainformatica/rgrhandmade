@@ -1,6 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
+import { useRef, useState } from "react";
 import { Arrow } from "@/components/Brand";
 import { GoldLine } from "@/components/ui/GoldLine";
 import { site } from "@/lib/content";
@@ -21,6 +22,9 @@ type FooterContactCopy = {
   messagePlaceholder: string;
   privacy: string;
   submit: string;
+  sending: string;
+  success: string;
+  error: string;
   note: string;
 };
 
@@ -35,10 +39,52 @@ const labelClass = "grid gap-2";
 const labelTextClass =
   "font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light";
 export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const startedAt = useRef(Date.now());
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+  const [lastDraft, setLastDraft] = useState<FormData | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    openEmailDraft(site.email, data, "RGR Handmade - Richiesta dal sito");
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setStatus("sending");
+    setError("");
+    setLastDraft(data);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.get("nome"),
+          company: data.get("azienda_o_referente"),
+          email: data.get("email"),
+          phone: data.get("telefono"),
+          message: data.get("messaggio"),
+          privacy: data.get("privacy"),
+          website: data.get("website"),
+          startedAt: Number(data.get("startedAt"))
+        })
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "Invio email non riuscito.");
+      }
+
+      form.reset();
+      startedAt.current = Date.now();
+      setLastDraft(null);
+      setStatus("sent");
+    } catch (submitError) {
+      setStatus("error");
+      setError(submitError instanceof Error ? submitError.message : "Invio email non riuscito.");
+    }
+  }
+
+  function handleMailtoFallback() {
+    if (lastDraft) openEmailDraft(site.email, lastDraft, "RGR Handmade - Richiesta dal sito");
   }
 
   return (
@@ -94,6 +140,8 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
           </p>
 
           <form onSubmit={handleSubmit} className="grid gap-4">
+            <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+            <input type="hidden" name="startedAt" value={startedAt.current} />
             <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
               <label className={labelClass}>
                 <span className={labelTextClass}>{copy.name}</span>
@@ -143,12 +191,22 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
             <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">
               <button
                 type="submit"
+                disabled={status === "sending"}
                 className="inline-flex min-h-11 items-center justify-center gap-3 rounded-full border border-gold bg-gold px-7 py-3.5 font-sans text-[12px] font-semibold uppercase tracking-[0.16em] text-warm-black transition-all duration-300 hover:-translate-y-px hover:border-gold-light hover:bg-gold-light max-[420px]:w-full"
               >
-                {copy.submit} <Arrow size={12} />
+                {status === "sending" ? copy.sending : copy.submit} <Arrow size={12} />
               </button>
+              {status === "error" && lastDraft && (
+                <button
+                  type="button"
+                  onClick={handleMailtoFallback}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-ivory/28 px-6 py-3 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-ivory/78 transition-colors hover:border-gold/80 hover:text-gold-light max-[420px]:w-full"
+                >
+                  Apri email
+                </button>
+              )}
               <p className="m-0 max-w-[360px] text-[12px] leading-[1.5] text-ivory/42">
-                {copy.note}
+                {status === "sent" ? copy.success : status === "error" ? error || copy.error : copy.note}
               </p>
             </div>
           </form>

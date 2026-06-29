@@ -37,19 +37,26 @@ const manrope = localFont({
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
   const canonical = new URL(settings.canonical_url);
+  const isMaintenance = process.env.VITRIX_MAINTENANCE === "true";
 
   return {
     title: { default: settings.seo_title, template: `%s - ${settings.site_name}` },
     description: settings.seo_description,
     metadataBase: canonical,
     alternates: { canonical: "/" },
-    robots: { index: settings.robots_index, follow: settings.robots_follow },
+    robots: { index: isMaintenance ? false : settings.robots_index, follow: isMaintenance ? false : settings.robots_follow },
     icons: settings.favicon_path ? { icon: settings.favicon_path, shortcut: settings.favicon_path } : undefined,
     openGraph: {
       type: "website",
       siteName: settings.site_name,
       locale: settings.default_language === "en" ? "en_US" : "it_IT",
       url: settings.canonical_url,
+      title: settings.og_title,
+      description: settings.og_description,
+      images: settings.og_image ? [settings.og_image] : undefined
+    },
+    twitter: {
+      card: settings.og_image ? "summary_large_image" : "summary",
       title: settings.og_title,
       description: settings.og_description,
       images: settings.og_image ? [settings.og_image] : undefined

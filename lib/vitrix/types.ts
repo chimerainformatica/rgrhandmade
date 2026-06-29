@@ -293,8 +293,8 @@ export const DEFAULT_VTX_EVENTS_CONFIG: VtxEventsConfig = {
   eyebrow: { it: "Adv Press · Fiere", en: "Press & Fairs" },
   title: { it: "Eventi", en: "Events" },
   description: {
-    it: "Eventi, fiere e pubblicazioni RGR.",
-    en: "RGR events, fairs and press.",
+    it: "R.G.R. presenta le sue collezioni e i nuovi trend di design all’interno dei più prestigiosi palcoscenici del settore orafo internazionale. R.G.R. è presente regolarmente a: VicenzaOro (gennaio e settembre) e OroArezzo (maggio)",
+    en: "R.G.R. showcases its collections and the latest design trends at some of the most prestigious events in the international jewelry industry. R.G.R. regularly exhibits at: VicenzaOro (January and September) and OroArezzo (May)",
   },
   layout: "featured-grid",
   items_limit: 6,
