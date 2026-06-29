@@ -8,7 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
     {
       url: settings.canonical_url,
-      lastModified: new Date(),
+      lastModified: settings.updated_at ?? new Date(),
       changeFrequency: "monthly",
       priority: 1
     }

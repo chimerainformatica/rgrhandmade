@@ -3,8 +3,9 @@ export function openEmailDraft(
   fields: FormData,
   subject?: string,
 ) {
+  const excludedFields = new Set(["website", "startedAt"]);
   const body = Array.from(fields.entries())
-    .filter(([, value]) => typeof value === "string" && value.trim())
+    .filter(([name, value]) => !excludedFields.has(name) && typeof value === "string" && value.trim())
     .map(([name, value]) => `${name}: ${String(value).trim()}`)
     .join("\n\n");
 
