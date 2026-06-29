@@ -26,10 +26,10 @@ export const it = {
   },
   about: {
     eyebrow: "L'azienda",
-    titlePre: "Una storia di mani,",
-    titleEm: "metallo e luce.",
+    titlePre: "LA STORIA DI UNA",
+    titleEm: "FAMIGLIA",
     quote:
-      "Materializzare in gioielli le emozioni, attraverso uno spiccato senso creativo.",
+      "Quarant'anni di esperienza nel settore artigianale per forgiare gioielli.",
     paragraphs: [
       "R.G.R. nasce ad Arezzo nel 1989 come laboratorio artigianale specializzato nelle lavorazioni di metalli preziosi.",
       "Già nei primi anni di attività, l’Azienda si contraddistingue per percorsi creativi originali.",

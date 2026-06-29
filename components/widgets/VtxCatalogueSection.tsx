@@ -171,7 +171,7 @@ function CollectionImage({
       src={src}
       alt={card.title}
       className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"} ${className}`}
-      style={{ objectPosition: card.img_position || "center" }}
+      style={{ objectPosition: variant === "thumb" && fit === "contain" ? "center center" : card.img_position || "center" }}
       width={variant === "preview" ? 1600 : 720}
       height={variant === "preview" ? 2133 : 960}
       sizes={variant === "preview"
@@ -232,7 +232,7 @@ function CollectionBlock({
       <button
         type="button"
         onClick={() => onOpen(head, head)}
-        className={`group relative overflow-hidden border bg-[#e8dfd0] text-left aspect-[3/4] shadow-[0_18px_48px_rgba(51,38,25,0.16)] max-[760px]:order-first max-[640px]:aspect-auto max-[640px]:min-h-[380px] max-[380px]:min-h-[340px] ${reverse && hasGallery ? "order-2" : ""}`}
+        className={`group relative w-full overflow-hidden border bg-[#e8dfd0] text-left aspect-[4/5] max-h-[560px] shadow-[0_18px_48px_rgba(51,38,25,0.16)] max-[760px]:order-first max-[640px]:aspect-auto max-[640px]:min-h-[360px] max-[380px]:min-h-[320px] ${reverse && hasGallery ? "order-2" : ""}`}
         style={{ borderColor: "#d8c8b4" }}
         aria-label={(lang === "it" ? "Apri anteprima " : "Open preview ") + head.title}
       >
@@ -309,26 +309,24 @@ function CollectionBlock({
       {/* Right column: mini-grid that fills exactly the height of the hero */}
       {hasGallery && (
         <div
-          className={`grid h-full min-h-[520px] gap-3 max-[900px]:gap-2 max-[760px]:min-h-0 ${galleryLayoutClass} ${reverse ? "order-1" : ""}`}
+          className={`grid h-full min-h-[440px] gap-3 max-[900px]:gap-2 max-[760px]:min-h-0 ${galleryLayoutClass} ${reverse ? "order-1" : ""}`}
         >
           {elements.map((item, idx) => {
             const isWide = elements.length === 3 && idx === 2;
             const colSpan = isWide ? "col-span-2" : "";
-            const imageInset = elements.length === 1
-              ? "p-10 max-[980px]:p-7 max-[640px]:p-5"
-              : "p-5 max-[980px]:p-4 max-[640px]:p-4";
+            const imageInset = "p-6 max-[980px]:p-5 max-[640px]:p-4";
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => onOpen(head, item)}
-                className={`group relative flex min-h-[250px] flex-col overflow-hidden bg-[#fbf8f1] text-left shadow-[0_12px_28px_rgba(60,44,28,0.08)] transition-transform duration-300 hover:-translate-y-0.5 max-[640px]:min-h-[210px] max-[380px]:min-h-[190px] ${colSpan}`}
+                className={`group relative flex min-h-[214px] flex-col overflow-hidden bg-[#fbf8f1] text-left shadow-[0_12px_28px_rgba(60,44,28,0.08)] transition-transform duration-300 hover:-translate-y-0.5 max-[640px]:min-h-[200px] max-[380px]:min-h-[184px] ${colSpan}`}
                 style={{ border: "1px solid rgba(216,200,180,0.72)" }}
                 aria-label={(lang === "it" ? "Apri anteprima " : "Open preview ") + item.title}
               >
                 {/* Image */}
-                <div className="relative flex-1 overflow-hidden bg-[#fffdf8]">
-                  <div className={`absolute inset-0 ${imageInset} transition-transform duration-500 ease-out group-hover:scale-[1.04]`}>
+                <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#fffdf8]">
+                  <div className={`absolute inset-0 flex items-center justify-center ${imageInset} transition-transform duration-500 ease-out group-hover:scale-[1.04]`}>
                     <CollectionImage card={item} variant="thumb" fit="contain" />
                   </div>
 
@@ -1089,7 +1087,7 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
           {isEmptyMock ? (
             <CatalogueHeaderSkeleton />
           ) : (
-            <div className="max-w-[640px]">
+            <div className="max-w-[640px] w-full">
               <div className="flex items-center gap-3.5 mb-6">
                 <GoldLine />
                 <span className="font-sans text-[11px] font-medium tracking-[0.22em] uppercase text-gold">
@@ -1097,7 +1095,7 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
                 </span>
               </div>
 
-              <WireReveal className="font-serif font-normal text-[clamp(24px,5vw,64px)] leading-[1.02] tracking-[-0.005em] text-balance mt-4 mb-4">
+              <WireReveal className="font-serif font-normal text-[clamp(24px,5vw,64px)] leading-[1.02] tracking-[-0.005em] text-pretty mt-4 mb-4">
                 {config.title_pre[lang]} <em className="italic text-gold">{config.title_em[lang]}</em>
               </WireReveal>
               <p className="m-0 max-w-[500px] text-[15.5px] leading-[1.7] text-taupe max-[640px]:text-[14px]">

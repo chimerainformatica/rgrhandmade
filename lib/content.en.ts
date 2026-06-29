@@ -26,10 +26,10 @@ export const en = {
   },
   about: {
     eyebrow: "The company",
-    titlePre: "A story of hands,",
-    titleEm: "metal and light.",
+    titlePre: "THE STORY OF A",
+    titleEm: "FAMILY",
     quote:
-      "Materialising emotions into jewellery through a distinctive creative sensibility.",
+      "Forty years of experience in artisanal craftsmanship to forge jewellery.",
     paragraphs: [
       "R.G.R. was founded in Arezzo in 1989 as an artisan workshop specialising in the processing of precious metals.",
       "From its earliest years, the company stood out for its original creative paths.",
