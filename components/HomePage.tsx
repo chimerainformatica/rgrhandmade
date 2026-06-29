@@ -138,7 +138,7 @@ export function HomePage({
             </div>
           )}
           <h1 className="font-serif font-light leading-[0.92] tracking-[-0.018em] text-warm-white mb-7 max-[640px]:mb-4"
-            style={{ fontSize: "clamp(36px,12vw,140px)", textShadow: "0 2px 30px rgba(0,0,0,.45)" }}>
+            style={{ fontSize: "clamp(34px,11vw,140px)", textShadow: "0 2px 24px rgba(0,0,0,.42)" }}>
             {t.hero.titlePre}{" "}
             <em className="block not-italic font-light"
               style={{
@@ -153,16 +153,16 @@ export function HomePage({
               {t.hero.titleEm}
             </em>
           </h1>
-          <p className="mb-10 max-w-[520px] font-sans font-light text-white/88 max-[640px]:mb-6 max-[640px]:text-[13px] max-[375px]:text-[12px]"
-            style={{ fontSize: "clamp(14px,1vw,18px)", lineHeight: 1.65, textShadow: "0 1px 14px rgba(0,0,0,.5)" }}>
+          <p className="mb-10 max-w-[520px] font-sans font-light text-white/88 text-[clamp(13.5px,1.05vw,18px)] max-[640px]:mb-6"
+            style={{ lineHeight: 1.65, textShadow: "0 1px 14px rgba(0,0,0,.5)" }}>
             {t.hero.lede}
           </p>
           <div className="flex gap-4 flex-wrap max-[640px]:flex-col max-[640px]:gap-2.5">
             <Btn href="#about" variant="primary" title={`${t.cta.primary} - RGR Handmade`}
-              className="!bg-gold !border-gold !text-warm-black hover:!bg-dark-brown hover:!border-dark-white hover:!text-warm-white max-[640px]:!w-full max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! max-[375px]:!text-[11px]">
+              className="!bg-gold !border-gold !text-warm-black hover:!bg-dark-brown hover:!border-dark-white hover:!text-warm-white max-[640px]:!w-full max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! max-[375px]:text-[12px]!">
               {t.cta.primary} <Arrow size={12} />
             </Btn>
-            <Btn href="#collections" variant="on-dark" title={`${t.cta.secondary} - RGR Handmade`} className="max-[640px]:!w-full max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! hover:!text-warm-black max-[375px]:!text-[11px]">{t.cta.secondary}</Btn>
+            <Btn href="#collections" variant="on-dark" title={`${t.cta.secondary} - RGR Handmade`} className="max-[640px]:!w-full max-[640px]:!py-3 max-[640px]:!px-5 max-[375px]:py-3! max-[375px]:px-5! hover:!text-warm-black max-[375px]:text-[12px]!">{t.cta.secondary}</Btn>
           </div>
         </div>
 
@@ -177,7 +177,7 @@ export function HomePage({
         <div className="absolute left-0 right-0 bottom-0 h-14 overflow-hidden z-[4] pointer-events-none
           flex items-center border-t border-white/14 max-[640px]:h-12"
           style={{ background: "linear-gradient(180deg,rgba(247,242,234,0) 0%,rgba(247,242,234,.04) 100%)" }}>
-          <div className="flex gap-10 whitespace-nowrap animate-marquee font-serif italic text-[18px] text-gold-light max-[640px]:text-[15px] max-[640px]:gap-6">
+          <div className="flex gap-10 whitespace-nowrap animate-marquee font-serif italic text-[18px] text-gold-light max-[640px]:text-[15px] max-[640px]:gap-6 max-[375px]:gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <span key={i} className="inline-flex items-center gap-8">
                 <span>Wire jewellery</span><span className="text-gold text-[10px]">*</span>

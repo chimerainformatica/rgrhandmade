@@ -3,12 +3,11 @@
 import { BrandLogo } from "@/components/Brand";
 import { FooterContactForm } from "@/components/FooterContactForm";
 import { content, type Lang } from "@/lib/content";
-import { Facebook, Instagram } from "lucide-react";
+import { Instagram } from "lucide-react";
 
 const asset = (n: string) => `/assets/rgr/${n}`;
 const BOXED_CONTAINER = "max-w-[1180px] mx-auto px-8 max-[640px]:px-4";
-const INSTAGRAM_URL = "https://www.instagram.com/rgrhandmade/";
-const FACEBOOK_URL = "https://www.facebook.com/rgrhandmade/";
+const INSTAGRAM_URL = "https://www.instagram.com/r.g.r.handmade";
 const MAPS_URL = "https://www.google.com/maps/dir/43.4700288,11.8325248/Via+Piero+Calamandrei,+253,+52100+Arezzo+AR/@43.4657173,11.8169862,15z/data=!4m10!4m9!1m1!4e1!1m5!1m1!1s0x132bece8e04023b9:0x3875d6f93b97586b!2m2!1d11.8294183!2d43.4591404!3e0?entry=ttu&g_ep=EgoyMDI2MDYyMi4wIKXMDSoASAFQAw%3D%3D";
 const HIDDEN_HOME_HREFS = new Set(["#atelier"]);
 const visibleExploreLinks = (links: Array<readonly [string, string]>) =>
@@ -40,7 +39,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
       <section className="border-t border-white/12 bg-[#120f0d]">
         <div className="mx-auto max-w-[1440px] px-12 pt-14 pb-10 max-[900px]:px-8 max-[640px]:px-4 max-[640px]:pt-10 max-[640px]:pb-6">
           {/* Link grid */}
-          <div className="mb-14 grid grid-cols-1 gap-x-16 gap-y-10 sm:grid-cols-2 lg:grid-cols-5 xl:gap-x-16 max-xl:gap-x-10 max-[640px]:mb-10 max-[520px]:gap-8">
+          <div className="mb-14 grid grid-cols-1 gap-x-16 gap-y-10 sm:grid-cols-2 lg:grid-cols-6 xl:gap-x-16 max-xl:gap-x-10 max-[640px]:mb-10 max-[520px]:gap-8">
             {/* Brand */}
             <div className="sm:col-span-2 lg:col-span-2">
               <BrandLogo className="h-14 mb-5" />
@@ -61,16 +60,6 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                   className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/18 text-ivory/62 transition-all duration-200 hover:-translate-y-px hover:border-gold hover:bg-gold hover:text-warm-black"
                 >
                   <Instagram size={18} strokeWidth={1.8} aria-hidden="true" />
-                </a>
-                <a
-                  href={FACEBOOK_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Facebook - RGR Handmade"
-                  aria-label="Facebook - RGR Handmade"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/18 text-ivory/62 transition-all duration-200 hover:-translate-y-px hover:border-gold hover:bg-gold hover:text-warm-black"
-                >
-                  <Facebook size={18} strokeWidth={1.8} aria-hidden="true" />
                 </a>
               </div>
             </div>

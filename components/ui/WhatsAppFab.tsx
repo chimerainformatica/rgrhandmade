@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 
 /* Numero fittizio segnaposto — sostituire con quello reale del cliente */
-const WHATSAPP_NUMBER = "393331234567"; // +39 333 123 4567
+const WHATSAPP_NUMBER = "+393714566712"; // +39 333 123 4567
 const WHATSAPP_MESSAGE = "Ciao! Vorrei avere informazioni sui vostri gioielli handmade.";
 
 export function WhatsAppFab({ label = "Scrivici su WhatsApp" }: { label?: string }) {
@@ -21,17 +21,17 @@ export function WhatsAppFab({ label = "Scrivici su WhatsApp" }: { label?: string
       transition={{ delay: 1.2, type: "spring", stiffness: 260, damping: 20 }}
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.94 }}
-      className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full
-        bg-[#25D366] text-white shadow-[0_8px_24px_rgba(37,211,102,0.45)]
-        max-[640px]:bottom-4 max-[640px]:right-4 max-[640px]:h-12 max-[640px]:w-12"
+      className="fixed bottom-6 right-6 z-[60] flex h-12 w-12 items-center justify-center rounded-full
+        bg-[#25D366] text-white shadow-[0_6px_18px_rgba(37,211,102,0.38)]
+        max-[640px]:bottom-4 max-[640px]:right-4 max-[640px]:h-11 max-[640px]:w-11"
     >
       {/* Anello pulsante */}
-      <span className="absolute inset-0 rounded-full bg-[#25D366] opacity-60 animate-ping" />
+      <span className="absolute inset-0 rounded-full bg-[#25D366] animate-whatsapp-ping" />
 
       {/* Logo WhatsApp */}
       <svg
         viewBox="0 0 32 32"
-        className="relative h-7 w-7 max-[640px]:h-6 max-[640px]:w-6"
+        className="relative h-6 w-6 max-[640px]:h-5 max-[640px]:w-5"
         fill="currentColor"
         aria-hidden="true"
       >
