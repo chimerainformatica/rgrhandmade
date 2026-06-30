@@ -1,10 +1,28 @@
 import { HomePage } from "@/components/HomePage";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { site } from "@/lib/content";
 import { getSiteSettings } from "@/lib/vitrix/settings";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_VTX_CATALOGUE_CONFIG, DEFAULT_VTX_EVENTS_CONFIG, type MediaCollection, type MediaCollectionItem, type VtxCatalogueConfig, type VtxEventsConfig } from "@/lib/vitrix/types";
+
+const landingTitle = "Gioielli artigianali Made in Italy";
+const landingDescription =
+  "R.G.R. Handmade realizza gioielli artigianali Made in Italy ad Arezzo dal 1989: collezioni, lavorazioni orafe e creazioni su misura.";
+
+export const metadata: Metadata = {
+  title: landingTitle,
+  description: landingDescription,
+  openGraph: {
+    title: `${landingTitle} - R.G.R. Handmade`,
+    description: landingDescription,
+  },
+  twitter: {
+    title: `${landingTitle} - R.G.R. Handmade`,
+    description: landingDescription,
+  },
+};
 
 async function getCatalogueData(slug: string): Promise<{ collection: MediaCollection; items: MediaCollectionItem[] } | null> {
   const config = getSupabaseConfig();

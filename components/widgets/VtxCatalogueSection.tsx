@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Arrow } from "@/components/Brand";
 import { Reveal } from "@/components/ui/Reveal";
@@ -161,27 +162,36 @@ function CollectionImage({
 }) {
   const src = variant === "preview" ? getPreviewImageUrl(card.img_path) : getThumbnailImageUrl(card.img_path);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setFailedSrc(null);
+    setLoaded(false);
+  }, [src]);
 
   if (!src || failedSrc === src) {
-    return <div className={`h-full w-full bg-[#d5cfc8] ${className}`} aria-hidden="true" />;
+    return <div className={`h-full w-full ${variant === "thumb" ? "skeleton bg-[#eee7dd]" : "bg-[#d5cfc8]"} ${className}`} aria-hidden="true" />;
   }
 
   return (
-    <img
-      src={src}
-      alt={card.title}
-      className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"} ${className}`}
-      style={{ objectPosition: variant === "thumb" && fit === "contain" ? "center center" : card.img_position || "center" }}
-      width={variant === "preview" ? 1600 : 720}
-      height={variant === "preview" ? 2133 : 960}
-      sizes={variant === "preview"
-        ? "(max-width: 520px) 100vw, (max-width: 860px) 50vw, 45vw"
-        : "(max-width: 420px) 100vw, (max-width: 768px) 50vw, (max-width: 1100px) 33vw, 25vw"}
-      loading={variant === "preview" ? "eager" : "lazy"}
-      fetchPriority={variant === "preview" ? "high" : "auto"}
-      decoding="async"
-      onError={() => setFailedSrc(src)}
-    />
+    <span className={`relative block h-full w-full overflow-hidden ${className}`}>
+      {variant === "thumb" && !loaded && <span className="absolute inset-0 z-10 skeleton bg-[#eee7dd]" aria-hidden="true" />}
+      <Image
+        src={src}
+        alt={card.title}
+        fill
+        className={`${fit === "contain" ? "object-contain" : "object-cover"} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        style={{ objectPosition: variant === "thumb" && fit === "contain" ? "center center" : card.img_position || "center" }}
+        sizes={variant === "preview"
+          ? "(max-width: 520px) 100vw, (max-width: 860px) 50vw, 45vw"
+          : "(max-width: 420px) 96px, (max-width: 768px) 120px, 160px"}
+        quality={variant === "preview" ? 88 : 68}
+        priority={variant === "preview"}
+        loading={variant === "preview" ? undefined : "lazy"}
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailedSrc(src)}
+      />
+    </span>
   );
 }
 
@@ -236,8 +246,8 @@ function CollectionBlock({
         style={{ borderColor: "#d8c8b4" }}
         aria-label={(lang === "it" ? "Apri anteprima " : "Open preview ") + head.title}
       >
-        {/* Collection image (without zoom) */}
-        <div className="absolute inset-0">
+        {/* Collection image (light zoom on hover) */}
+        <div className="absolute inset-0 origin-center transition-transform duration-[800ms] ease-out will-change-transform group-hover:scale-[1.06]">
           <CollectionImage card={head} variant="preview" />
         </div>
 
@@ -246,7 +256,7 @@ function CollectionBlock({
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to top, rgba(20,18,16,0.72) 0%, rgba(20,18,16,0.28) 45%, rgba(20,18,16,0.05) 100%)",
+              "linear-gradient(to top, rgba(20,18,16,0.88) 0%, rgba(20,18,16,0.5) 38%, rgba(20,18,16,0.18) 65%, rgba(20,18,16,0) 100%)",
           }}
         />
 
@@ -314,7 +324,6 @@ function CollectionBlock({
           {elements.map((item, idx) => {
             const isWide = elements.length === 3 && idx === 2;
             const colSpan = isWide ? "col-span-2" : "";
-            const imageInset = "p-6 max-[980px]:p-5 max-[640px]:p-4";
             return (
               <button
                 key={item.id}
@@ -326,7 +335,7 @@ function CollectionBlock({
               >
                 {/* Image */}
                 <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#fffdf8]">
-                  <div className={`absolute inset-0 flex items-center justify-center ${imageInset} transition-transform duration-500 ease-out group-hover:scale-[1.04]`}>
+                  <div className="absolute inset-0 flex items-center justify-center p-3 max-[640px]:p-2 origin-center transition-transform duration-500 ease-out group-hover:scale-[1.06]">
                     <CollectionImage card={item} variant="thumb" fit="contain" />
                   </div>
 
@@ -586,18 +595,22 @@ function ZoomImage({ card }: { card: CollectionRow }) {
       onMouseMove={handleMove}
     >
       {!loaded && <div className="absolute inset-0 z-10 skeleton" />}
-      <img
+      <Image
         src={src}
         alt={card.title}
-        className="h-full w-full select-none object-contain transition-transform duration-300 ease-out will-change-transform"
+        fill
+        className="select-none object-contain transition-[opacity,transform] duration-300 ease-out will-change-transform"
         style={{
           opacity: loaded ? 1 : 0,
           transform: zooming ? `scale(${ZOOM_SCALE})` : "scale(1)",
           transformOrigin: origin,
           objectPosition: card.img_position || "center",
         }}
+        sizes="(max-width: 520px) 100vw, (max-width: 860px) 520px, 560px"
+        quality={100}
+        unoptimized
+        priority
         draggable={false}
-        decoding="async"
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
       />
@@ -683,16 +696,12 @@ function PreviewModal({
   allItems,
   initialViewId = null,
   lang,
-  ctaLabel,
-  showCta = true,
   onClose,
 }: {
   card: CollectionRow | null;
   allItems: CollectionRow[];
   initialViewId?: number | null;
   lang: Lang;
-  ctaLabel?: string;
-  showCta?: boolean;
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -724,7 +733,9 @@ function PreviewModal({
 
   useEffect(() => {
     if (!card) return;
-    const src = getPreviewImageUrl(card.img_path);
+    const initialPreviewView = initialViewId != null ? views.find((v) => v.id === initialViewId) ?? card : card;
+    const src = getPreviewImageUrl(initialPreviewView.img_path);
+    const zoomSrc = getZoomImageUrl(initialPreviewView.img_path);
     const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setImageReady(false);
     setImageError(false);
@@ -760,6 +771,7 @@ function PreviewModal({
       };
       image.src = src;
     }
+    if (zoomSrc) void preloadImage(zoomSrc);
 
     document.addEventListener("keydown", onKeyDown);
     document.body.style.overflow = "hidden";
@@ -771,7 +783,7 @@ function PreviewModal({
       document.body.style.overflow = "";
       previousActive?.focus();
     };
-  }, [card, onClose]);
+  }, [card, initialViewId, views, onClose]);
 
   if (!card || !view) return null;
 
@@ -808,7 +820,6 @@ function PreviewModal({
     const next = (currentIndex + delta + views.length) % views.length;
     setActive(views[next]);
   };
-  const ctaText = ctaLabel ?? (lang === "it" ? "Richiedi informazioni" : "Request information");
 
   return (
     <div
@@ -840,10 +851,10 @@ function PreviewModal({
           </svg>
         </button>
 
-        {/* Left column: main image (zoom-lens) + arrows + circular thumbnails */}
-        <div className="flex flex-col gap-7 p-4 max-[520px]:gap-5 max-[520px]:p-2">
+        {/* Left column: main image (zoom-lens) + arrows */}
+        <div className="flex min-w-0 flex-col justify-center p-4 max-[860px]:justify-start max-[520px]:p-2">
           <div className="relative">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] bg-white shadow-[0_26px_60px_rgba(40,30,18,0.16)]">
+            <div className="relative aspect-square max-h-[calc(100svh-96px)] overflow-hidden rounded-[16px] bg-white shadow-[0_26px_60px_rgba(40,30,18,0.16)]">
               {imageError ? (
                 <div className="h-full w-full bg-white" aria-hidden="true" />
               ) : (
@@ -872,14 +883,26 @@ function PreviewModal({
               </>
             )}
           </div>
+        </div>
 
+        {/* Colonna destra: info collezione / elemento attivo */}
+        <div className="flex flex-col items-center justify-start border-l border-hairline px-12 pb-14 pt-[118px] text-center text-warm-black max-[980px]:pt-[104px] max-[860px]:border-l-0 max-[860px]:border-t max-[860px]:px-8 max-[860px]:pb-10 max-[860px]:pt-8 max-[520px]:px-6 max-[520px]:py-8">
+          <Ornament />
+          <h3 id="vtx-preview-title" className="m-0 mt-5 max-w-[360px] font-serif text-[clamp(34px,4.1vw,54px)] font-normal leading-[1.02]">
+            {lang === "it" ? "Collezione" : "Collection"} {card.title}
+          </h3>
+          <div className="my-6 h-px w-12 bg-gold/50" />
+          {shouldShowDescription(view) && (
+            <p className="max-w-[330px] font-sans text-[14px] leading-[1.8] text-taupe">
+              {view.description}
+            </p>
+          )}
           {views.length > 1 && (
             <div
-              className="relative flex items-start justify-center gap-8 px-6 max-[520px]:gap-5 max-[520px]:px-2"
+              className="mt-14 grid w-full max-w-[330px] grid-cols-3 justify-items-center gap-x-5 gap-y-5 max-[980px]:max-w-[300px] max-[860px]:mt-8 max-[860px]:max-w-[340px] max-[520px]:max-w-[270px] max-[520px]:gap-x-3 max-[520px]:gap-y-4"
               role="tablist"
               aria-label={lang === "it" ? "Articoli della collection" : "Collection items"}
             >
-              <div className="pointer-events-none absolute left-12 right-12 top-[34px] h-px bg-gold/30 max-[520px]:top-[28px]" />
               {views.map((item) => {
                 const isActive = item.id === view.id;
                 return (
@@ -889,52 +912,26 @@ function PreviewModal({
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => setActive(item)}
-                    className="group relative z-[1] flex flex-col items-center gap-2.5"
+                    className="group flex min-w-0 flex-col items-center gap-2.5"
                     aria-label={(lang === "it" ? "Mostra " : "Show ") + item.title}
                   >
                     <span
                       className={
-                        "overflow-hidden rounded-full bg-ivory transition-all duration-300 " +
+                        "relative overflow-hidden rounded-full bg-ivory transition-all duration-300 " +
                         (isActive
-                          ? "h-[76px] w-[76px] ring-2 ring-gold shadow-[0_12px_26px_rgba(40,30,18,0.2)] max-[520px]:h-[60px] max-[520px]:w-[60px]"
-                          : "h-[60px] w-[60px] ring-1 ring-hairline opacity-80 group-hover:opacity-100 group-hover:ring-warm-black/40 max-[520px]:h-[50px] max-[520px]:w-[50px]")
+                          ? "h-[82px] w-[82px] ring-2 ring-gold shadow-[0_16px_30px_rgba(40,30,18,0.2)] max-[520px]:h-[68px] max-[520px]:w-[68px]"
+                          : "h-[74px] w-[74px] ring-1 ring-gold/28 opacity-86 shadow-[0_10px_20px_rgba(40,30,18,0.11)] group-hover:opacity-100 group-hover:ring-warm-black/35 max-[520px]:h-[62px] max-[520px]:w-[62px]")
                       }
                     >
                       <CollectionImage card={item} variant="thumb" />
                     </span>
-                    <span className={"font-sans text-[10px] uppercase tracking-[0.16em] " + (isActive ? "text-gold" : "text-taupe")}>
+                    <span className={"block w-[82px] max-w-full truncate text-center font-sans text-[9px] uppercase tracking-[0.14em] transition-colors max-[520px]:w-[68px] max-[520px]:tracking-[0.12em] " + (isActive ? "text-gold" : "text-taupe")}>
                       {item.title}
                     </span>
                   </button>
                 );
               })}
             </div>
-          )}
-        </div>
-
-        {/* Colonna destra: info collezione / elemento attivo */}
-        <div className="flex flex-col items-center justify-center border-l border-hairline px-12 py-14 text-center text-warm-black max-[860px]:border-l-0 max-[860px]:border-t max-[860px]:px-8 max-[860px]:py-10 max-[520px]:px-6 max-[520px]:py-8">
-          <Ornament />
-          <span className="mt-5 font-sans text-[11px] uppercase tracking-[0.3em] text-taupe">
-            {lang === "it" ? "Collezione" : "Collection"}
-          </span>
-          <h3 id="vtx-preview-title" className="m-0 mt-3 font-serif text-[clamp(30px,4vw,52px)] font-normal leading-[1.05]">
-            {view.title}
-          </h3>
-          <div className="my-6 h-px w-12 bg-gold/50" />
-          {shouldShowDescription(view) && (
-            <p className="max-w-[330px] font-sans text-[14px] leading-[1.8] text-taupe">
-              {view.description}
-            </p>
-          )}
-          {showCta && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-9 rounded-[2px] bg-gold px-8 py-3.5 font-sans text-[12px] uppercase tracking-[0.18em] text-warm-white transition hover:bg-warm-black"
-            >
-              {ctaText}
-            </button>
           )}
         </div>
       </motion.div>
@@ -1087,7 +1084,7 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
           {isEmptyMock ? (
             <CatalogueHeaderSkeleton />
           ) : (
-            <div className="max-w-[640px] w-full">
+            <div className="max-w-none w-full">
               <div className="flex items-center gap-3.5 mb-6">
                 <GoldLine />
                 <span className="font-sans text-[11px] font-medium tracking-[0.22em] uppercase text-gold">
@@ -1255,8 +1252,6 @@ export function VtxCatalogueSection({ config, lang, catalogueData = null }: Prop
         allItems={allItems}
         initialViewId={selectedViewId}
         lang={lang}
-        ctaLabel={config.cta_label[lang]}
-        showCta={config.show_cta}
         onClose={closePreview}
       />
 

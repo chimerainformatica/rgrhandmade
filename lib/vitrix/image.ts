@@ -24,6 +24,12 @@ export function buildSupabaseRenderUrl(storagePath: string, size: ImageSize, res
   return `${SUPABASE_URL}/storage/v1/render/image/public/${IMAGE_BUCKET}/${normalizedPath}?width=${size.width}&height=${size.height}&quality=${size.quality}&resize=${resize}`;
 }
 
+export function buildSupabasePublicUrl(storagePath: string): string | null {
+  if (!SUPABASE_URL) return null;
+  const normalizedPath = storagePath.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+  return `${SUPABASE_URL}/storage/v1/object/public/${IMAGE_BUCKET}/${normalizedPath}`;
+}
+
 export function extractStoragePath(value: string): string | null {
   const publicMarker = `/storage/v1/object/public/${IMAGE_BUCKET}/`;
   const renderMarker = `/storage/v1/render/image/public/${IMAGE_BUCKET}/`;
@@ -65,11 +71,11 @@ export function getZoomImageUrl(path: string | null): string | null {
   if (!value) return null;
   if (value.startsWith("http")) {
     const storagePath = extractStoragePath(value);
-    return storagePath ? buildSupabaseRenderUrl(storagePath, ZOOM_SIZE, "contain") ?? value : value;
+    return storagePath ? buildSupabasePublicUrl(storagePath) ?? value.split("?")[0] : value;
   }
   if (value.startsWith("/")) return value;
   const storagePath = extractStoragePath(value);
-  if (storagePath) return buildSupabaseRenderUrl(storagePath, ZOOM_SIZE, "contain") ?? value;
+  if (storagePath) return buildSupabasePublicUrl(storagePath) ?? value;
   return `/assets/rgr/${value}`;
 }
 

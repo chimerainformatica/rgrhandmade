@@ -38,6 +38,7 @@ import {
 } from "@mui/material";
 import type { EventCategoryRow } from "@/lib/vitrix/event-categories";
 import type { VtxEventRow } from "@/lib/vitrix/types";
+import { getThumbnailImageUrl } from "@/lib/vitrix/image";
 import { fieldSx, iconBtnSx, selectSx } from "@/lib/admin-theme";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { AdminLoadingBoundary } from "@/components/admin/AdminLoadingBoundary";
@@ -746,7 +747,7 @@ export function EventsPanel() {
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                         <Box sx={{ width: 54, height: 46, flex: "0 0 auto", borderRadius: "8px", overflow: "hidden", bgcolor: "var(--vx-surface-muted)", border: "1px solid var(--vx-border)", display: "grid", placeItems: "center" }}>
                           {item.main_image_url || item.cover_image ? (
-                            <Box component="img" src={item.main_image_url ?? item.cover_image ?? ""} alt={item.image_alt ?? item.title} sx={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: item.image_position ?? "50% 50%" }} />
+                            <Box component="img" src={getThumbnailImageUrl(item.main_image_url ?? item.cover_image) ?? ""} alt={item.image_alt ?? item.title} loading="lazy" decoding="async" sx={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: item.image_position ?? "50% 50%" }} />
                           ) : (
                             <ArticleOutlinedIcon sx={{ fontSize: 18, color: "var(--vx-text-disabled)" }} />
                           )}

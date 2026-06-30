@@ -13,6 +13,7 @@ import {
   Typography
 } from "@mui/material";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { LoginSubmitButton } from "@/components/admin/LoginSubmitButton";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { signIn } from "@/app/admin/login/actions";
 
@@ -354,15 +355,7 @@ export default async function AdminLoginPage({
           )}
 
           {/* CTA */}
-          <Button
-            type="submit"
-            disabled={!config.isConfigured}
-            variant="contained"
-            size="large"
-            fullWidth
-          >
-            Accedi
-          </Button>
+          <LoginSubmitButton disabled={!config.isConfigured} />
 
           {/* Dev demo hint */}
           {devDemo?.email && (
