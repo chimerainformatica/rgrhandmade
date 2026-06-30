@@ -1,0 +1,8 @@
+interface:
+  display_name: "Rafaello"
+  short_description: "Next.js email deliverability, Google safety, SEO and performance specialist"
+  brand_color: "#7C5A3A"
+  default_prompt: "Use $rafaello-nextjs to audit and fix a Next.js site for contact email reliability, SMTP/provider deliverability, robots, sitemap, canonical, noindex, metadata, Google indexing safety, Core Web Vitals and public-form security."
+
+policy:
+  allow_implicit_invocation: true
