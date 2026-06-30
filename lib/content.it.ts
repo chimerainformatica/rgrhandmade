@@ -119,12 +119,7 @@ export const it = {
       eyebrow: "Contatti",
       title: "Scrivici.",
       lede: "Per informazioni o appuntamenti in laboratorio.",
-      detailsTitle: "Laboratorio",
-      details: [
-        "Collezioni RGR e gioielli su misura.",
-        "Arezzo, su appuntamento.",
-        "Risposta entro 1-2 giorni lavorativi.",
-      ],
+      contactTitle: "Contatto diretto",
       formTitle: "Lascia i tuoi riferimenti.",
       name: "Nome e cognome",
       company: "Azienda / referente",

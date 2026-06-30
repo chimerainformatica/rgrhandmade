@@ -11,8 +11,7 @@ type FooterContactCopy = {
   eyebrow: string;
   title: string;
   lede: string;
-  detailsTitle: string;
-  details: readonly string[];
+  contactTitle: string;
   formTitle: string;
   name: string;
   company: string;
@@ -120,16 +119,33 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-warm-black/45 via-transparent to-transparent" />
           </figure>
 
-          <div className="grid gap-3 border-t border-white/10 pt-7">
+          <div className="grid gap-4 border-t border-white/10 pt-7">
             <p className="m-0 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">
-              {copy.detailsTitle}
+              {copy.contactTitle}
             </p>
-            <div className="grid gap-2">
-              {copy.details.map((detail) => (
-                <span key={detail} className="text-[13px] leading-[1.55] text-ivory/58">
-                  {detail}
+            <div className="grid gap-3">
+              <a
+                href={`tel:${site.phone.replace(/\s+/g, "")}`}
+                className="group grid gap-1 border border-gold/18 bg-gold/8 px-5 py-4 transition-colors hover:border-gold/55 hover:bg-gold/12"
+              >
+                <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/42">
+                  {copy.phone}
                 </span>
-              ))}
+                <span className="font-serif text-[clamp(24px,4vw,34px)] leading-none text-ivory transition-colors group-hover:text-gold-light">
+                  {site.phone}
+                </span>
+              </a>
+              <a
+                href={`mailto:${site.email}`}
+                className="group grid gap-1 border border-gold/18 bg-gold/8 px-5 py-4 transition-colors hover:border-gold/55 hover:bg-gold/12"
+              >
+                <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-ivory/42">
+                  {copy.email}
+                </span>
+                <span className="break-all font-sans text-[18px] font-semibold leading-tight text-ivory transition-colors group-hover:text-gold-light">
+                  {site.email}
+                </span>
+              </a>
             </div>
           </div>
         </aside>

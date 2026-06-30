@@ -119,12 +119,7 @@ export const en = {
       eyebrow: "Contact",
       title: "Write to us.",
       lede: "For information or appointments at the workshop.",
-      detailsTitle: "Workshop",
-      details: [
-        "RGR collections and bespoke jewellery.",
-        "Arezzo, by appointment.",
-        "Reply within 1-2 business days.",
-      ],
+      contactTitle: "Direct contact",
       formTitle: "Leave your contact details.",
       name: "Full name",
       company: "Company / contact person",
