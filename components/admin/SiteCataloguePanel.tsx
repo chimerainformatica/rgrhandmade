@@ -798,7 +798,46 @@ export function SiteCataloguePanel() {
     }
   };
 
-  const renderOverview = () => (
+  const renderOverview = () => {
+    if (loadingRows || loadingCategories) {
+      return (
+        <Box sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 3 }}>
+            <Skeleton variant="text" width={220} height={40} />
+            <Skeleton variant="rounded" width={140} height={36} />
+          </Box>
+          <Card
+            sx={{
+              width: 356,
+              maxWidth: "100%",
+              borderRadius: "12px",
+              border: "1px solid rgba(15,23,42,0.08)",
+              boxShadow: "0 1px 3px rgba(15,23,42,0.16)",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, px: 2, py: 1.75, pr: 6 }}>
+              <Box sx={{ minWidth: 0, width: "100%" }}>
+                <Skeleton variant="text" width={180} height={26} />
+                <Skeleton variant="text" width={120} />
+                <Box sx={{ mt: 0.75 }}>
+                  <Skeleton variant="rounded" width={80} height={22} />
+                </Box>
+              </Box>
+            </Box>
+            <Skeleton variant="rectangular" width="100%" height={164} />
+            <Box sx={{ px: 2, py: 2 }}>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Skeleton variant="rounded" width={90} height={22} />
+                <Skeleton variant="rounded" width={70} height={22} />
+              </Box>
+            </Box>
+          </Card>
+        </Box>
+      );
+    }
+
+    return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 3 }}>
         <Typography sx={{ fontSize: 28, fontWeight: 700, color: "var(--vx-text-primary)", lineHeight: 1.1 }}>
@@ -970,6 +1009,8 @@ export function SiteCataloguePanel() {
             sx: {
               mt: 1,
               minWidth: 180,
+              bgcolor: "var(--vx-surface)",
+              color: "var(--vx-text-primary)",
               border: "1px solid var(--vx-border)",
               boxShadow: "0 20px 44px rgba(15,23,42,0.16)",
             },
@@ -988,7 +1029,8 @@ export function SiteCataloguePanel() {
         </MenuItem>
       </Menu>
     </Box>
-  );
+    );
+  };
 
   const renderDetail = () => (
     <Box sx={{ p: 3 }}>
