@@ -379,7 +379,7 @@ export function EditEventDialog({
         />
       </Stack>
       <Paper sx={{ border: "1px solid var(--vx-border)", borderRadius: "14px", overflow: "hidden", boxShadow: "none", bgcolor: "var(--vx-surface)" }}>
-        <Box sx={{ aspectRatio: isPublication ? "3 / 4" : "16 / 10", bgcolor: "var(--vx-surface-muted)", position: "relative" }}>
+        <Box sx={{ aspectRatio: isPublication ? "3 / 4" : "16 / 10", maxHeight: isPublication ? { xs: 240, sm: 280, lg: 300 } : undefined, bgcolor: "var(--vx-surface-muted)", position: "relative" }}>
           {previewImage ? (
             <Box component="img" src={previewImage} alt={value.image_alt || value.title || "Anteprima evento"} sx={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: value.image_position }} />
           ) : (
@@ -485,7 +485,7 @@ export function EditEventDialog({
               gridTemplateColumns: {
                 xs: "1fr",
                 lg: isPublication
-                  ? "minmax(0, 2.6fr) minmax(270px, 0.72fr)"
+                  ? "minmax(0, 1.4fr) minmax(320px, 1fr)"
                   : "minmax(0, 1.85fr) minmax(320px, 1fr)",
               },
               gap: 2.5,
