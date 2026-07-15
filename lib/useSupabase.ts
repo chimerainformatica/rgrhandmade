@@ -76,7 +76,7 @@ export type NewsRow = {
   venue: string | null;
   title: string;
   event_date: string | null;
-  type: "event" | "fiera" | "press";
+  type: "event" | "fiera" | "press" | "publication";
   lang: string;
   status: string;
   slug?: string | null;

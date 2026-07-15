@@ -1,6 +1,6 @@
 import type { VitrixPressType } from "@/lib/vitrix/types";
 
-export const EVENT_TYPES: VitrixPressType[] = ["event", "fiera", "press"];
+export const EVENT_TYPES: VitrixPressType[] = ["event", "fiera", "press", "publication"];
 export const EVENT_STATUSES = ["draft", "published"] as const;
 
 type EventStatus = (typeof EVENT_STATUSES)[number];
@@ -71,7 +71,7 @@ export function normalizeEventPayload(input: EventInput, existingSlug?: string |
     title,
     slug,
     type,
-    category: trimString(input.category) ?? type,
+    category: type === "publication" ? "Pubblicazioni" : trimString(input.category) ?? type,
     venue: trimString(input.venue),
     event_date: trimString(input.event_date),
     lang: trimString(input.lang) ?? "it",
@@ -113,9 +113,14 @@ export function validateEventPayload(payload: ReturnType<typeof normalizeEventPa
   if (!payload.type) return "Il tipo evento e obbligatorio.";
   if (payload.status === "published") {
     if (!payload.category) return "La categoria e obbligatoria per pubblicare.";
-    if (!payload.excerpt) return "La descrizione breve e obbligatoria per pubblicare.";
+    if (payload.type === "publication") {
+      if (!payload.event_date_label) return "Il numero o l'edizione e obbligatorio per pubblicare.";
+      if (!payload.main_image_url && !payload.main_image_path) return "La copertina e obbligatoria per pubblicare.";
+    } else if (!payload.excerpt) {
+      return "La descrizione breve e obbligatoria per pubblicare.";
+    }
   }
-  if (payload.event_start_at && payload.event_end_at) {
+  if (payload.type !== "publication" && payload.event_start_at && payload.event_end_at) {
     const start = Date.parse(payload.event_start_at);
     const end = Date.parse(payload.event_end_at);
     if (Number.isFinite(start) && Number.isFinite(end) && end < start) {

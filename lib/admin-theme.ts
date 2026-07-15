@@ -36,6 +36,44 @@ export const selectSx = {
   "& .MuiSelect-icon": { color: "var(--vx-text-muted)" }
 };
 
+/** Portal-safe styling for MUI Autocomplete dropdowns in the Vitrix admin. */
+export const autocompletePaperSx = {
+  mt: 0.75,
+  bgcolor: "var(--vx-surface)",
+  color: "var(--vx-text-primary)",
+  border: "1px solid var(--vx-border)",
+  borderRadius: "10px",
+  boxShadow: "var(--vx-shadow-lg)",
+  backgroundImage: "none",
+  overflow: "hidden",
+  "& .MuiAutocomplete-listbox": {
+    p: 0.75,
+    bgcolor: "var(--vx-surface)",
+    "& .MuiAutocomplete-option": {
+      minHeight: 38,
+      px: 1.25,
+      borderRadius: "7px",
+      color: "var(--vx-text-secondary)",
+      fontSize: 14,
+      "&[aria-selected='true']": {
+        bgcolor: "var(--vx-primary-soft)",
+        color: "var(--vx-primary)",
+      },
+      "&.Mui-focused, &.Mui-focusVisible": {
+        bgcolor: "var(--vx-surface-muted)",
+        color: "var(--vx-text-primary)",
+      },
+      "&[aria-selected='true'].Mui-focused": {
+        bgcolor: "var(--vx-primary-soft)",
+      },
+    },
+  },
+  "& .MuiAutocomplete-noOptions": {
+    bgcolor: "var(--vx-surface)",
+    color: "var(--vx-text-muted)",
+  },
+};
+
 export const iconBtnSx = (intent: "default" | "danger" | "primary" = "default") => {
   const map = {
     default: { color: "var(--vx-text-muted)", hoverColor: "var(--vx-text-primary)", hoverBg: "var(--vx-surface-muted)" },

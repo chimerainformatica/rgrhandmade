@@ -5,7 +5,7 @@ import { site } from "@/lib/content";
 import { getSiteSettings } from "@/lib/vitrix/settings";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DEFAULT_VTX_CATALOGUE_CONFIG, DEFAULT_VTX_EVENTS_CONFIG, type MediaCollection, type MediaCollectionItem, type VtxCatalogueConfig, type VtxEventsConfig } from "@/lib/vitrix/types";
+import { DEFAULT_VTX_CATALOGUE_CONFIG, DEFAULT_VTX_EVENTS_CONFIG, normalizeVtxEventsConfig, type MediaCollection, type MediaCollectionItem, type VtxCatalogueConfig, type VtxEventsConfig } from "@/lib/vitrix/types";
 
 const landingTitle = "Gioielli artigianali Made in Italy";
 const landingDescription =
@@ -80,7 +80,7 @@ async function getVtxEventsConfig(): Promise<VtxEventsConfig> {
       .eq("widget_id", "vtx_events")
       .maybeSingle();
     if (error || !data?.config) return DEFAULT_VTX_EVENTS_CONFIG;
-    return { ...DEFAULT_VTX_EVENTS_CONFIG, ...(data.config as Partial<VtxEventsConfig>) };
+    return normalizeVtxEventsConfig(data.config as Partial<VtxEventsConfig>);
   } catch {
     return DEFAULT_VTX_EVENTS_CONFIG;
   }

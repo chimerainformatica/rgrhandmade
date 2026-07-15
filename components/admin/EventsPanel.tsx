@@ -3,11 +3,13 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import FilterListOutlinedIcon from "@mui/icons-material/FilterListOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import PushPinOutlinedIcon from "@mui/icons-material/PushPinOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import {
@@ -24,9 +26,11 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  Menu,
   MenuItem,
   Paper,
   Select,
+  Skeleton,
   Snackbar,
   Stack,
   Switch,
@@ -38,15 +42,14 @@ import {
 } from "@mui/material";
 import type { EventCategoryRow } from "@/lib/vitrix/event-categories";
 import type { VtxEventRow } from "@/lib/vitrix/types";
-import { getThumbnailImageUrl } from "@/lib/vitrix/image";
-import { fieldSx, iconBtnSx, selectSx } from "@/lib/admin-theme";
+import { getCoverImageUrl, getThumbnailImageUrl } from "@/lib/vitrix/image";
+import { autocompletePaperSx, fieldSx, iconBtnSx, selectSx } from "@/lib/admin-theme";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { AdminLoadingBoundary } from "@/components/admin/AdminLoadingBoundary";
 import { ItalianFlag, UKFlag } from "@/components/admin/Flags";
 import { EditEventDialog, type EventFormValues } from "@/components/admin/events/EditEventDialog";
 
 type ToastState = { open: boolean; message: string; severity: "success" | "error" };
-type EventType = "event" | "fiera" | "press";
+type EventType = "event" | "fiera" | "press" | "publication";
 type StatusFilter = "all" | "published" | "draft" | "featured";
 type BulkAction = "" | "publish" | "draft" | "feature" | "unfeature" | "delete";
 type SortKey = "title" | "event" | "status" | "type";
@@ -62,7 +65,14 @@ type QuickEditValues = {
   status: "draft" | "published";
   is_featured: boolean;
   sort_order: number;
+  type: EventType;
 };
+
+const VTX_EVENTS_WIDGET_ID = "vtx_events";
+
+function isPublicationsCategory(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase("it") === "pubblicazioni";
+}
 
 const EMPTY_FORM: EventFormValues = {
   title: "",
@@ -104,6 +114,86 @@ const cardSx = {
   overflow: "hidden",
 };
 
+function EventThumbnail({ src, alt, position, vertical = false }: { src: string | null; alt: string; position?: string | null; vertical?: boolean }) {
+  const [loadedUrl, setLoadedUrl] = useState("");
+  const [failedUrl, setFailedUrl] = useState("");
+  const imageLoaded = Boolean(src) && loadedUrl === src;
+  const imageFailed = Boolean(src) && failedUrl === src;
+
+  return (
+    <Box sx={{ position: "relative", width: vertical ? 42 : 54, height: vertical ? 56 : 46, flex: "0 0 auto", borderRadius: "8px", overflow: "hidden", bgcolor: "var(--vx-surface-muted)", border: vertical ? "1px solid rgba(184,146,84,0.45)" : "1px solid var(--vx-border)", display: "grid", placeItems: "center", boxShadow: vertical ? "0 5px 12px rgba(75,53,27,0.12)" : "none" }}>
+      {src && !imageFailed ? (
+        <>
+          {!imageLoaded && (
+            <Skeleton
+              variant="rectangular"
+              animation="wave"
+              aria-label="Caricamento miniatura evento"
+              sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", transform: "none", bgcolor: "var(--vx-surface-muted)" }}
+            />
+          )}
+          <Box
+            component="img"
+            src={src}
+            alt={alt}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoadedUrl(src)}
+            onError={() => setFailedUrl(src)}
+            sx={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: position ?? "50% 50%", opacity: imageLoaded ? 1 : 0, transition: "opacity 180ms ease" }}
+          />
+        </>
+      ) : (
+        <ArticleOutlinedIcon sx={{ fontSize: 18, color: "var(--vx-text-disabled)" }} />
+      )}
+    </Box>
+  );
+}
+
+function EventsTableSkeleton() {
+  return (
+    <Box component="table" aria-label="Caricamento eventi" sx={{ width: "100%", borderCollapse: "collapse" }}>
+      <Box component="thead">
+        <Box component="tr" sx={{ borderBottom: "1px solid var(--vx-border)", bgcolor: "var(--vx-surface-muted)" }}>
+          {[32, 180, 64, 90, 82, 70, 84, 52, 54].map((width, index) => (
+            <Box key={index} component="th" sx={{ px: index === 0 ? 1.25 : 2, py: 1.5, textAlign: "left" }}>
+              <Skeleton variant={index === 0 ? "circular" : "text"} width={width} height={index === 0 ? 22 : 18} />
+            </Box>
+          ))}
+        </Box>
+      </Box>
+      <Box component="tbody">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Box key={index} component="tr" sx={{ borderBottom: index < 4 ? "1px solid var(--vx-border)" : "none" }}>
+            <Box component="td" sx={{ px: 1.25, py: 1.5 }}><Skeleton variant="rounded" width={22} height={22} /></Box>
+            <Box component="td" sx={{ px: 2, py: 1.5, minWidth: 320 }}>
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                <Skeleton variant="rounded" width={54} height={46} sx={{ flexShrink: 0 }} />
+                <Box sx={{ width: "100%" }}>
+                  <Skeleton variant="text" width={170} height={22} />
+                  <Skeleton variant="text" width={220} height={17} />
+                </Box>
+              </Stack>
+            </Box>
+            <Box component="td" sx={{ px: 2, py: 1.5 }}><Skeleton variant="rounded" width={62} height={22} /></Box>
+            <Box component="td" sx={{ px: 2, py: 1.5 }}><Skeleton variant="text" width={82} /></Box>
+            <Box component="td" sx={{ px: 2, py: 1.5 }}><Skeleton variant="text" width={94} /></Box>
+            <Box component="td" sx={{ px: 2, py: 1.5 }}><Skeleton variant="text" width={74} /></Box>
+            <Box component="td" sx={{ px: 2, py: 1.5 }}><Skeleton variant="rounded" width={76} height={22} /></Box>
+            <Box component="td" sx={{ px: 2, py: 1.5 }}><Skeleton variant="rounded" width={44} height={18} /></Box>
+            <Box component="td" sx={{ px: 1.5, py: 1.5 }}>
+              <Stack direction="row" spacing={0.5}>
+                <Skeleton variant="circular" width={28} height={28} />
+                <Skeleton variant="circular" width={28} height={28} />
+              </Stack>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "-";
   const date = new Date(value);
@@ -141,7 +231,7 @@ function rowToForm(row: VtxEventRow): EventFormValues {
     cta_target: row.cta_target === "_blank" ? "_blank" : "_self",
     is_featured: Boolean(row.is_featured),
     sort_order: row.sort_order ?? 0,
-    widget_id: row.widget_id ?? "vtx_events",
+    widget_id: VTX_EVENTS_WIDGET_ID,
     seo_title: row.seo_title ?? "",
     seo_description: row.seo_description ?? "",
     canonical_url: row.canonical_url ?? "",
@@ -161,6 +251,7 @@ function rowToQuickEdit(row: VtxEventRow): QuickEditValues {
     status: row.status,
     is_featured: Boolean(row.is_featured),
     sort_order: row.sort_order ?? 0,
+    type: row.type as EventType,
   };
 }
 
@@ -186,7 +277,7 @@ function formToPayload(form: EventFormValues) {
     cta_target: form.cta_target,
     is_featured: form.is_featured,
     sort_order: form.sort_order,
-    widget_id: form.widget_id || "vtx_events",
+    widget_id: VTX_EVENTS_WIDGET_ID,
     seo_title: form.seo_title || null,
     seo_description: form.seo_description || null,
     canonical_url: form.canonical_url || null,
@@ -225,6 +316,7 @@ export function EventsPanel() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [mainImageFile, setMainImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [createMenuAnchor, setCreateMenuAnchor] = useState<HTMLElement | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VtxEventRow | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -234,6 +326,8 @@ export function EventsPanel() {
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null);
   const [categoryEditName, setCategoryEditName] = useState("");
   const abortRef = useRef<AbortController | null>(null);
+  const saveInFlightRef = useRef(false);
+  const quickSaveInFlightRef = useRef(false);
 
   const showToast = useCallback((message: string, severity: "success" | "error" = "success") => {
     setToast({ open: true, message, severity });
@@ -333,9 +427,14 @@ export function EventsPanel() {
     });
   }
 
-  function openCreate() {
+  function openCreate(type: "event" | "publication") {
+    setCreateMenuAnchor(null);
     setEditingItem(null);
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      type,
+      category: type === "publication" ? "Pubblicazioni" : "",
+    });
     setMainImageFile(null);
     setDialogOpen(true);
   }
@@ -372,9 +471,11 @@ export function EventsPanel() {
       showToast("Il titolo e obbligatorio.", "error");
       return;
     }
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setSaving(true);
     try {
-      const categoryName = await ensureCategory(nextForm.category);
+      const categoryName = nextForm.type === "publication" ? "Pubblicazioni" : await ensureCategory(nextForm.category);
       const finalForm = { ...nextForm, category: categoryName };
       const isEdit = Boolean(editingItem);
       const url = isEdit ? `/api/vitrix/events/${editingItem!.id}` : "/api/vitrix/events";
@@ -396,25 +497,33 @@ export function EventsPanel() {
       const res = await fetch(url, requestInit);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      showToast(isEdit ? "Evento aggiornato." : "Evento creato.");
+      const contentLabel = finalForm.type === "publication" ? "Pubblicazione" : "Evento";
+      showToast(isEdit ? `${contentLabel} aggiornato.` : `${contentLabel} creato.`);
       closeDialog();
       fetchItems();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "Errore nel salvataggio.", "error");
     } finally {
+      saveInFlightRef.current = false;
       setSaving(false);
     }
   }
 
   async function handleQuickSave() {
     if (!quickEditId || !quickEdit) return;
+    if (quickSaveInFlightRef.current) return;
     if (!quickEdit.title.trim()) {
       showToast("Il titolo e obbligatorio.", "error");
       return;
     }
+    if (quickEdit.type === "publication" && !quickEdit.event_date.trim()) {
+      showToast("Il numero o l'edizione e obbligatorio.", "error");
+      return;
+    }
+    quickSaveInFlightRef.current = true;
     setQuickSaving(true);
     try {
-      const categoryName = await ensureCategory(quickEdit.category);
+      const categoryName = quickEdit.type === "publication" ? "Pubblicazioni" : await ensureCategory(quickEdit.category);
       const res = await fetch(`/api/vitrix/events/${quickEditId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -429,6 +538,8 @@ export function EventsPanel() {
           status: quickEdit.status,
           is_featured: quickEdit.is_featured,
           sort_order: quickEdit.sort_order,
+          type: quickEdit.type,
+          widget_id: VTX_EVENTS_WIDGET_ID,
         }),
       });
       const json = await res.json();
@@ -440,8 +551,29 @@ export function EventsPanel() {
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "Errore nella modifica rapida.", "error");
     } finally {
+      quickSaveInFlightRef.current = false;
       setQuickSaving(false);
     }
+  }
+
+  function updateQuickCategory(category: string) {
+    setQuickEdit((current) => current && ({
+      ...current,
+      category,
+      ...(isPublicationsCategory(category) ? { type: "publication" as const } : {}),
+    }));
+  }
+
+  function updateQuickType(type: EventType) {
+    setQuickEdit((current) => current && ({
+      ...current,
+      type,
+      ...(type === "publication"
+        ? { category: "Pubblicazioni" }
+        : current.type === "publication" && isPublicationsCategory(current.category)
+          ? { category: "" }
+          : {}),
+    }));
   }
 
   async function ensureCategory(rawName: string) {
@@ -584,7 +716,7 @@ export function EventsPanel() {
             Eventi
           </Typography>
           <Typography sx={{ fontSize: 13, color: "var(--vx-text-muted)" }}>
-            Gestisci eventi, fiere e press con filtri, quick edit e azioni massive.
+            Gestisci eventi, fiere, press e pubblicazioni con filtri, modifica rapida e azioni massive.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
@@ -599,11 +731,29 @@ export function EventsPanel() {
           <Button
             variant="contained"
             startIcon={<AddOutlinedIcon />}
-            onClick={openCreate}
+            endIcon={<ExpandMoreOutlinedIcon />}
+            onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
+            aria-haspopup="menu"
+            aria-expanded={Boolean(createMenuAnchor)}
             sx={{ height: 38, borderRadius: "8px", textTransform: "none", fontSize: 13, fontWeight: 700, bgcolor: "var(--vx-primary)", boxShadow: "none", "&:hover": { bgcolor: "var(--vx-primary)", filter: "brightness(0.92)" } }}
           >
-            Aggiungi evento
+            Nuovo
           </Button>
+          <Menu
+            anchorEl={createMenuAnchor}
+            open={Boolean(createMenuAnchor)}
+            onClose={() => setCreateMenuAnchor(null)}
+            slotProps={{ paper: { sx: { mt: 0.75, minWidth: 230, border: "1px solid var(--vx-border)", borderRadius: "10px", bgcolor: "var(--vx-surface)", boxShadow: "0 14px 34px rgba(15,23,42,0.16)" } } }}
+          >
+            <MenuItem onClick={() => openCreate("event")} sx={{ gap: 1.25, py: 1.1, fontSize: 13 }}>
+              <EventOutlinedIcon sx={{ fontSize: 19, color: "var(--vx-primary)" }} />
+              Nuovo evento
+            </MenuItem>
+            <MenuItem onClick={() => openCreate("publication")} sx={{ gap: 1.25, py: 1.1, fontSize: 13 }}>
+              <MenuBookOutlinedIcon sx={{ fontSize: 19, color: "#9A6F2E" }} />
+              Nuova pubblicazione
+            </MenuItem>
+          </Menu>
         </Stack>
       </Stack>
 
@@ -662,6 +812,7 @@ export function EventsPanel() {
               <MenuItem value="event">Eventi</MenuItem>
               <MenuItem value="fiera">Fiere</MenuItem>
               <MenuItem value="press">Press</MenuItem>
+              <MenuItem value="publication">Pubblicazioni</MenuItem>
             </Select>
             <Select size="small" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} sx={selectSx}>
               <MenuItem value="all">Tutte le categorie</MenuItem>
@@ -702,7 +853,7 @@ export function EventsPanel() {
 
       <Paper sx={cardSx}>
         {loading ? (
-          <AdminLoadingBoundary label="Carico eventi" minHeight={320} />
+          <EventsTableSkeleton />
         ) : displayed.length === 0 ? (
           <Box sx={{ p: 8, textAlign: "center" }}>
             <ArticleOutlinedIcon sx={{ fontSize: 40, color: "var(--vx-text-disabled)", mb: 2 }} />
@@ -739,19 +890,18 @@ export function EventsPanel() {
             <Box component="tbody">
               {pageItems.map((item, idx) => (
                 <Fragment key={item.id}>
-                  <Box key={item.id} component="tr" sx={{ borderBottom: quickEditId === item.id ? "none" : "1px solid var(--vx-border)", "&:hover": { bgcolor: "var(--vx-surface-muted)" } }}>
+                  <Box key={item.id} component="tr" sx={{ borderBottom: quickEditId === item.id ? "none" : "1px solid var(--vx-border)", bgcolor: item.type === "publication" ? "rgba(184,146,84,0.055)" : "transparent", boxShadow: item.type === "publication" ? "inset 3px 0 #B89254" : "none", "&:hover": { bgcolor: item.type === "publication" ? "rgba(184,146,84,0.11)" : "var(--vx-surface-muted)" } }}>
                     <Box component="td" sx={{ px: 1.25, py: 1.5 }}>
                       <Checkbox size="small" checked={selectedIds.includes(item.id)} onChange={() => toggleSelected(item.id)} />
                     </Box>
                     <Box component="td" sx={{ px: 2, py: 1.5, minWidth: 320 }}>
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                        <Box sx={{ width: 54, height: 46, flex: "0 0 auto", borderRadius: "8px", overflow: "hidden", bgcolor: "var(--vx-surface-muted)", border: "1px solid var(--vx-border)", display: "grid", placeItems: "center" }}>
-                          {item.main_image_url || item.cover_image ? (
-                            <Box component="img" src={getThumbnailImageUrl(item.main_image_url ?? item.cover_image) ?? ""} alt={item.image_alt ?? item.title} loading="lazy" decoding="async" sx={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: item.image_position ?? "50% 50%" }} />
-                          ) : (
-                            <ArticleOutlinedIcon sx={{ fontSize: 18, color: "var(--vx-text-disabled)" }} />
-                          )}
-                        </Box>
+                        <EventThumbnail
+                          src={item.type === "publication" ? getThumbnailImageUrl(item.main_image_url ?? item.cover_image) : getCoverImageUrl(item.main_image_url ?? item.cover_image)}
+                          alt={item.image_alt ?? item.title}
+                          position={item.image_position}
+                          vertical={item.type === "publication"}
+                        />
                         <Box sx={{ minWidth: 0 }}>
                           <Typography sx={{ fontSize: 14, fontWeight: 700, color: "var(--vx-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</Typography>
                           <Stack direction="row" spacing={1} sx={{ mt: 0.5, alignItems: "center", flexWrap: "wrap" }}>
@@ -768,7 +918,7 @@ export function EventsPanel() {
                     <Box component="td" sx={{ px: 2, py: 1.5 }}><Typography sx={{ fontSize: 13, color: "var(--vx-text-secondary)" }}>{item.category || "-"}</Typography></Box>
                     <Box component="td" sx={{ px: 2, py: 1.5 }}>
                       <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-                        <EventOutlinedIcon sx={{ fontSize: 14, color: "var(--vx-text-muted)" }} />
+                        {item.type === "publication" ? <Chip label="Edizione" size="small" sx={{ height: 20, fontSize: 9.5, bgcolor: "rgba(184,146,84,0.14)", color: "#9A6F2E" }} /> : <EventOutlinedIcon sx={{ fontSize: 14, color: "var(--vx-text-muted)" }} />}
                         <Typography sx={{ fontSize: 12.5, color: "var(--vx-text-secondary)" }}>{item.event_date_label || formatDate(item.event_start_at || item.event_date)}</Typography>
                       </Stack>
                     </Box>
@@ -794,26 +944,33 @@ export function EventsPanel() {
                   </Box>
                   {quickEditId === item.id && quickEdit && (
                     <Box key={`${item.id}-quick`} component="tr" sx={{ borderBottom: idx < pageItems.length - 1 ? "1px solid var(--vx-border)" : "none" }}>
-                      <Box component="td" colSpan={9} sx={{ p: 0, bgcolor: "rgba(247,249,252,0.82)" }}>
+                      <Box component="td" colSpan={9} sx={{ p: 0, bgcolor: item.type === "publication" ? "rgba(184,146,84,0.08)" : "rgba(247,249,252,0.82)" }}>
                         <Box sx={{ p: 2.5, borderTop: "1px solid var(--vx-border)" }}>
                           <Typography sx={{ mb: 2, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--vx-text-muted)" }}>Modifica rapida</Typography>
                           <Stack spacing={2}>
                             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                               <TextField label="Titolo" value={quickEdit.title} onChange={(e) => setQuickEdit((p) => p && ({ ...p, title: e.target.value }))} fullWidth sx={fieldSx} />
-                              <TextField label="Slug" value={quickEdit.slug} onChange={(e) => setQuickEdit((p) => p && ({ ...p, slug: e.target.value }))} fullWidth sx={fieldSx} />
+                              {quickEdit.type !== "publication" && <TextField label="Slug" value={quickEdit.slug} onChange={(e) => setQuickEdit((p) => p && ({ ...p, slug: e.target.value }))} fullWidth sx={fieldSx} />}
                             </Stack>
                             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                              <TextField label="Data label" value={quickEdit.event_date} onChange={(e) => setQuickEdit((p) => p && ({ ...p, event_date: e.target.value }))} fullWidth sx={fieldSx} />
-                              <TextField label="Inizio evento" type="datetime-local" value={quickEdit.event_start_at} onChange={(e) => setQuickEdit((p) => p && ({ ...p, event_start_at: e.target.value }))} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />
+                              <TextField label={quickEdit.type === "publication" ? "Numero / edizione" : "Data label"} value={quickEdit.event_date} onChange={(e) => setQuickEdit((p) => p && ({ ...p, event_date: e.target.value }))} fullWidth sx={fieldSx} />
+                              {quickEdit.type !== "publication" && <TextField label="Inizio evento" type="datetime-local" value={quickEdit.event_start_at} onChange={(e) => setQuickEdit((p) => p && ({ ...p, event_start_at: e.target.value }))} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />}
                               <TextField label="Ordinamento" type="number" value={quickEdit.sort_order} onChange={(e) => setQuickEdit((p) => p && ({ ...p, sort_order: Number(e.target.value) }))} sx={fieldSx} />
                             </Stack>
                             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                              <Autocomplete
+                              <TextField select label="Tipo" value={quickEdit.type} onChange={(e) => updateQuickType(e.target.value as EventType)} fullWidth sx={fieldSx}>
+                                <MenuItem value="event">Evento</MenuItem>
+                                <MenuItem value="fiera">Fiera</MenuItem>
+                                <MenuItem value="press">Press</MenuItem>
+                                <MenuItem value="publication">Pubblicazione</MenuItem>
+                              </TextField>
+                              {quickEdit.type !== "publication" && <Autocomplete
                                 freeSolo
                                 options={categories.map((category) => category.name)}
                                 value={quickEdit.category || ""}
-                                onChange={(_, next) => setQuickEdit((p) => p && ({ ...p, category: typeof next === "string" ? next : next ?? "" }))}
-                                onInputChange={(_, next) => setQuickEdit((p) => p && ({ ...p, category: next }))}
+                                onChange={(_, next) => updateQuickCategory(typeof next === "string" ? next : next ?? "")}
+                                onInputChange={(_, next) => updateQuickCategory(next)}
+                                slotProps={{ paper: { sx: autocompletePaperSx } }}
                                 fullWidth
                                 renderInput={(params) => (
                                   <TextField
@@ -823,15 +980,15 @@ export function EventsPanel() {
                                     sx={fieldSx}
                                   />
                                 )}
-                              />
-                              <TextField label="Tag" value={quickEdit.tags} onChange={(e) => setQuickEdit((p) => p && ({ ...p, tags: e.target.value }))} fullWidth sx={fieldSx} />
+                              />}
+                              {quickEdit.type !== "publication" && <TextField label="Tag" value={quickEdit.tags} onChange={(e) => setQuickEdit((p) => p && ({ ...p, tags: e.target.value }))} fullWidth sx={fieldSx} />}
                               <TextField select label="Stato" value={quickEdit.status} onChange={(e) => setQuickEdit((p) => p && ({ ...p, status: e.target.value as "draft" | "published" }))} sx={fieldSx}>
                                 <MenuItem value="draft">Bozza</MenuItem>
                                 <MenuItem value="published">Pubblicato</MenuItem>
                               </TextField>
                             </Stack>
                             <Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                              <FormControlLabel control={<Switch checked={quickEdit.is_featured} onChange={(e) => setQuickEdit((p) => p && ({ ...p, is_featured: e.target.checked }))} />} label="Metti questo evento in evidenza" />
+                              <FormControlLabel control={<Switch checked={quickEdit.is_featured} onChange={(e) => setQuickEdit((p) => p && ({ ...p, is_featured: e.target.checked }))} />} label={quickEdit.type === "publication" ? "Metti questa pubblicazione in evidenza" : "Metti questo evento in evidenza"} />
                               <Stack direction="row" spacing={1}>
                                 <Button variant="contained" disabled={quickSaving} onClick={handleQuickSave} sx={{ textTransform: "none", borderRadius: "8px" }}>{quickSaving ? "Aggiorno..." : "Aggiorna"}</Button>
                                 <Button variant="outlined" onClick={() => { setQuickEditId(null); setQuickEdit(null); }} sx={{ textTransform: "none", borderRadius: "8px", borderColor: "var(--vx-border)" }}>Annulla</Button>

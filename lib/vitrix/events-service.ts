@@ -15,6 +15,12 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "i
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const BULK_ACTIONS = new Set<BulkAction>(["publish", "draft", "feature", "unfeature", "delete"]);
 
+function eventWriteError(error: { code?: string }, action: "creare" | "aggiornare") {
+  if (error.code === "23514") return "La tipologia selezionata non e ancora disponibile nel database.";
+  if (error.code === "23505") return "Esiste gia un contenuto con lo stesso identificatore.";
+  return `Impossibile ${action} il contenuto. Riprova tra poco.`;
+}
+
 function normalizeIds(value: unknown): number[] {
   if (!Array.isArray(value)) return [];
   return Array.from(
@@ -136,7 +142,7 @@ export async function createVitrixEvent(req: NextRequest) {
     const { data, error } = await supabase.from("news").insert(payload).select().single();
     if (error) {
       await logVitrixError(error, "/api/vitrix/events");
-      return NextResponse.json({ error: "Failed to create event" }, { status: 500 });
+      return NextResponse.json({ error: eventWriteError(error, "creare") }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, item: data as VtxEventRow }, { status: 201 });
@@ -177,7 +183,10 @@ export async function updateVitrixEvent(req: NextRequest, id: string) {
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
     const { data, error } = await supabase.from("news").update(payload).eq("id", id).select().single();
-    if (error) return NextResponse.json({ error: "Failed to update event" }, { status: 500 });
+    if (error) {
+      await logVitrixError(error, "/api/vitrix/events/[id]");
+      return NextResponse.json({ error: eventWriteError(error, "aggiornare") }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true, item: data as VtxEventRow });
   } catch (err) {

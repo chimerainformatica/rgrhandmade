@@ -39,7 +39,7 @@ export type VitrixCatalogueCategoryRow = {
   item_count?: number;
 };
 
-export type VitrixPressType = "event" | "fiera" | "press";
+export type VitrixPressType = "event" | "fiera" | "press" | "publication";
 
 export type VitrixPressRow = {
   id: number;
@@ -230,7 +230,7 @@ export const DEFAULT_CTX_CATALOGUE_CONFIG = DEFAULT_VTX_CATALOGUE_CONFIG;
 export type VtxEventRow = {
   id: number;
   slug: string | null;
-  type: "event" | "fiera" | "press";
+  type: VitrixPressType;
   category: string;
   venue: string | null;
   title: string;
@@ -283,6 +283,13 @@ export type VtxEventsConfig = {
   show_filters: boolean;
   featured_first: boolean;
   cta_label: BilingualText;
+  publications: {
+    enabled: boolean;
+    section_id: string;
+    title: BilingualText;
+    description: BilingualText;
+    items_limit: number;
+  };
 };
 
 export const DEFAULT_VTX_EVENTS_CONFIG: VtxEventsConfig = {
@@ -302,7 +309,35 @@ export const DEFAULT_VTX_EVENTS_CONFIG: VtxEventsConfig = {
   show_filters: true,
   featured_first: true,
   cta_label: { it: "Leggi", en: "Read" },
+  publications: {
+    enabled: true,
+    section_id: "publications",
+    title: { it: "Editorial & Press", en: "Editorial & Press" },
+    description: {
+      it: "Una selezione di riviste e pubblicazioni che raccontano il mondo R.G.R.",
+      en: "A selection of magazines and publications featuring the world of R.G.R.",
+    },
+    items_limit: 8,
+  },
 };
+
+export function normalizeVtxEventsConfig(input?: Partial<VtxEventsConfig> | null): VtxEventsConfig {
+  const publications = input?.publications;
+  return {
+    ...DEFAULT_VTX_EVENTS_CONFIG,
+    ...input,
+    eyebrow: { ...DEFAULT_VTX_EVENTS_CONFIG.eyebrow, ...input?.eyebrow },
+    title: { ...DEFAULT_VTX_EVENTS_CONFIG.title, ...input?.title },
+    description: { ...DEFAULT_VTX_EVENTS_CONFIG.description, ...input?.description },
+    cta_label: { ...DEFAULT_VTX_EVENTS_CONFIG.cta_label, ...input?.cta_label },
+    publications: {
+      ...DEFAULT_VTX_EVENTS_CONFIG.publications,
+      ...publications,
+      title: { ...DEFAULT_VTX_EVENTS_CONFIG.publications.title, ...publications?.title },
+      description: { ...DEFAULT_VTX_EVENTS_CONFIG.publications.description, ...publications?.description },
+    },
+  };
+}
 
 export type VitrixBootstrap = {
   source: VitrixSource;
