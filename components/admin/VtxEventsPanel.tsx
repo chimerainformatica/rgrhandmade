@@ -16,7 +16,7 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import { DEFAULT_VTX_EVENTS_CONFIG, type VtxEventsConfig } from "@/lib/vitrix/types";
+import { DEFAULT_VTX_EVENTS_CONFIG, normalizeVtxEventsConfig, type VtxEventsConfig } from "@/lib/vitrix/types";
 import { fieldSx } from "@/lib/admin-theme";
 
 type ToastState = { open: boolean; message: string; severity: "success" | "error" };
@@ -33,7 +33,7 @@ export function VtxEventsPanel() {
       .then((res) => res.json())
       .then((json) => {
         if (!active) return;
-        setConfig({ ...DEFAULT_VTX_EVENTS_CONFIG, ...(json.config ?? {}) });
+        setConfig(normalizeVtxEventsConfig(json.config));
       })
       .catch(() => setToast({ open: true, message: "Errore nel caricamento configurazione.", severity: "error" }))
       .finally(() => active && setLoading(false));
@@ -50,7 +50,7 @@ export function VtxEventsPanel() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Errore salvataggio.");
-      setConfig({ ...DEFAULT_VTX_EVENTS_CONFIG, ...(json.config ?? config) });
+      setConfig(normalizeVtxEventsConfig(json.config ?? config));
       setToast({ open: true, message: "Widget Eventi aggiornato.", severity: "success" });
     } catch (err) {
       setToast({ open: true, message: err instanceof Error ? err.message : "Errore salvataggio.", severity: "error" });
@@ -114,6 +114,38 @@ export function VtxEventsPanel() {
             <FormControlLabel control={<Switch checked={config.show_filters} onChange={(e) => setConfig((p) => ({ ...p, show_filters: e.target.checked }))} />} label="Mostra filtri" />
             <FormControlLabel control={<Switch checked={config.featured_first} onChange={(e) => setConfig((p) => ({ ...p, featured_first: e.target.checked }))} />} label="Featured prima" />
           </Stack>
+
+          <Box sx={{ p: 2.5, border: "1px solid var(--vx-border)", borderRadius: "12px", bgcolor: "var(--vx-surface-soft)" }}>
+            <Stack spacing={2.25}>
+              <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 15, fontWeight: 800, color: "var(--vx-text-primary)" }}>
+                    Sezione Pubblicazioni
+                  </Typography>
+                  <Typography sx={{ mt: 0.35, fontSize: 12.5, color: "var(--vx-text-muted)" }}>
+                    Griglia separata di copertine verticali, senza pagine dettaglio.
+                  </Typography>
+                </Box>
+                <FormControlLabel
+                  control={<Switch checked={config.publications.enabled} onChange={(e) => setConfig((p) => ({ ...p, publications: { ...p.publications, enabled: e.target.checked } }))} />}
+                  label="Abilitata"
+                />
+              </Box>
+
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <TextField label="Section ID" value={config.publications.section_id} onChange={(e) => setConfig((p) => ({ ...p, publications: { ...p.publications, section_id: e.target.value } }))} fullWidth sx={fieldSx} />
+                <TextField label="Limite pubblicazioni" type="number" value={config.publications.items_limit} onChange={(e) => setConfig((p) => ({ ...p, publications: { ...p.publications, items_limit: Math.max(1, Number(e.target.value)) } }))} sx={fieldSx} />
+              </Stack>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <TextField label="Titolo pubblicazioni IT" value={config.publications.title.it} onChange={(e) => setConfig((p) => ({ ...p, publications: { ...p.publications, title: { ...p.publications.title, it: e.target.value } } }))} fullWidth sx={fieldSx} />
+                <TextField label="Titolo pubblicazioni EN" value={config.publications.title.en} onChange={(e) => setConfig((p) => ({ ...p, publications: { ...p.publications, title: { ...p.publications.title, en: e.target.value } } }))} fullWidth sx={fieldSx} />
+              </Stack>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <TextField label="Descrizione pubblicazioni IT" value={config.publications.description.it} onChange={(e) => setConfig((p) => ({ ...p, publications: { ...p.publications, description: { ...p.publications.description, it: e.target.value } } }))} fullWidth multiline minRows={2} sx={fieldSx} />
+                <TextField label="Descrizione pubblicazioni EN" value={config.publications.description.en} onChange={(e) => setConfig((p) => ({ ...p, publications: { ...p.publications, description: { ...p.publications.description, en: e.target.value } } }))} fullWidth multiline minRows={2} sx={fieldSx} />
+              </Stack>
+            </Stack>
+          </Box>
 
           <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
             <Button onClick={handleSave} disabled={saving} variant="contained" startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <SaveOutlinedIcon />} sx={{ textTransform: "none", borderRadius: "8px", fontWeight: 700 }}>

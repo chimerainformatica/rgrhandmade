@@ -87,6 +87,73 @@ const cellSx = {
   verticalAlign: "middle",
 };
 
+function CatalogueCover({ imageUrl, color, alt }: { imageUrl: string; color: string; alt: string }) {
+  const [loadedUrl, setLoadedUrl] = useState("");
+  const [failedUrl, setFailedUrl] = useState("");
+  const imageLoaded = Boolean(imageUrl) && loadedUrl === imageUrl;
+  const imageFailed = Boolean(imageUrl) && failedUrl === imageUrl;
+
+  return (
+    <Box
+      className="cover-image"
+      sx={{
+        position: "relative",
+        height: 164,
+        overflow: "hidden",
+        bgcolor: color,
+        transition: "transform 0.45s ease",
+      }}
+    >
+      {(!imageUrl || imageFailed) && (
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: "absolute",
+            inset: 0,
+            background: `linear-gradient(135deg, ${color}, rgba(255,255,255,0.16))`,
+          }}
+        />
+      )}
+      {imageUrl && !imageFailed && (
+        <>
+          {!imageLoaded && (
+            <Skeleton
+              variant="rectangular"
+              animation="wave"
+              aria-label="Caricamento immagine di copertina"
+              sx={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                bgcolor: "var(--vx-surface-muted)",
+                transform: "none",
+              }}
+            />
+          )}
+          <Box
+            component="img"
+            src={imageUrl}
+            alt={alt}
+            onLoad={() => setLoadedUrl(imageUrl)}
+            onError={() => setFailedUrl(imageUrl)}
+            sx={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+              opacity: imageLoaded ? 1 : 0,
+              transition: "opacity 220ms ease",
+            }}
+          />
+        </>
+      )}
+    </Box>
+  );
+}
+
 const statusMap: Record<CatalogueStatus, { label: string; bg: string; color: string; dot: string }> = {
   published: {
     label: "Pubblicato",
@@ -908,18 +975,10 @@ export function SiteCataloguePanel() {
                 </Box>
               </Box>
             </Box>
-            <Box
-              className="cover-image"
-              sx={{
-                height: 164,
-                bgcolor: catalogueColor,
-                backgroundImage: catalogueCover
-                  ? `url("${catalogueCover.replace(/"/g, "%22")}")`
-                  : `linear-gradient(135deg, ${catalogueColor}, rgba(255,255,255,0.16))`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                transition: "transform 0.45s ease",
-              }}
+            <CatalogueCover
+              imageUrl={catalogueCover}
+              color={catalogueColor}
+              alt={`Copertina ${catalogueTitle}`}
             />
             <Box sx={{ px: 2, py: 2 }}>
               {catalogueDescription && (

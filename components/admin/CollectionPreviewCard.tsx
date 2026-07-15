@@ -3,7 +3,6 @@
 import { Box, Typography, ToggleButtonGroup, ToggleButton } from "@mui/material";
 import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
 import FullscreenOutlinedIcon from "@mui/icons-material/FullscreenOutlined";
-import type { VitrixCatalogueRow } from "@/lib/vitrix/types";
 
 export type PreviewMode = "compact" | "expanded";
 
@@ -63,7 +62,6 @@ export default function CollectionPreviewCard({
   imageUrl,
   refCode,
   title,
-  description,
   category,
   imgPosition,
   lang,

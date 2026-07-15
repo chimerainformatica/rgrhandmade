@@ -6,8 +6,10 @@ type StatusKey = "published" | "draft" | "fiera" | "press" | string;
 const CONFIG: Record<string, { bg: string; color: string; label: string; pulse?: boolean }> = {
   published: { bg: "rgba(46,125,50,0.10)",  color: "#2E7D32", label: "Pubblicato" },
   draft:     { bg: "rgba(237,108,2,0.10)",  color: "#ED6C02", label: "Bozza", pulse: true },
+  event:     { bg: "rgba(14,165,233,0.10)", color: "#0284C7", label: "Evento" },
   fiera:     { bg: "rgba(25,118,210,0.10)", color: "#1565C0", label: "Fiera" },
-  press:     { bg: "rgba(108,92,231,0.12)", color: "#6C5CE7", label: "Press" }
+  press:     { bg: "rgba(108,92,231,0.12)", color: "#6C5CE7", label: "Press" },
+  publication: { bg: "rgba(184,146,84,0.16)", color: "#9A6F2E", label: "Pubblicazione" },
 };
 
 export function StatusBadge({ status, size = "sm" }: { status: StatusKey; size?: "xs" | "sm" }) {
