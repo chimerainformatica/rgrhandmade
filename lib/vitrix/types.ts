@@ -13,6 +13,8 @@ export type VitrixModuleRow = {
 
 export type VitrixCatalogueRow = {
   id: number;
+  translation_group_id: string;
+  parent_translation_group_id: string | null;
   ref: string;
   title: string;
   description: string | null;
@@ -33,6 +35,7 @@ export type VitrixCatalogueCategoryRow = {
   id: string;
   catalogue_key: string;
   name: string;
+  name_en: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

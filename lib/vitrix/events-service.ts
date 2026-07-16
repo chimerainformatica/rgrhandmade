@@ -140,13 +140,25 @@ export async function createVitrixEvent(req: NextRequest) {
     const validationError = validateEventPayload(payload);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
-    const { data, error } = await supabase.from("news").insert(payload).select().single();
+    const translationGroupId = payload.translation_group_id ?? crypto.randomUUID();
+    const source = { ...payload, translation_group_id: translationGroupId };
+    const sibling = {
+      ...source,
+      lang: source.lang === "en" ? "it" : "en",
+      status: "draft" as const,
+      published_at: null,
+    };
+    const { data, error } = await supabase.from("news").insert([source, sibling]).select();
     if (error) {
       await logVitrixError(error, "/api/vitrix/events");
       return NextResponse.json({ error: eventWriteError(error, "creare") }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, item: data as VtxEventRow }, { status: 201 });
+    const created = (data ?? []) as VtxEventRow[];
+    return NextResponse.json(
+      { success: true, item: created.find((item) => item.lang === source.lang) ?? created[0], translations: created },
+      { status: 201 },
+    );
   } catch (err) {
     console.error("POST /api/vitrix/events error:", err);
     await logVitrixError(err, "/api/vitrix/events");
@@ -319,18 +331,18 @@ export async function getPublicEvents(req: NextRequest) {
     const limit = Math.min(Number.parseInt(searchParams.get("limit") || "50", 10), 100);
     const page = Math.max(Number.parseInt(searchParams.get("page") || "0", 10), 0);
 
-    let query = supabase.from("news").select("*", { count: "exact" }).eq("status", "published");
+    const requestedLang = lang === "en" ? "en" : "it";
+    let query = supabase.from("news").select("*").eq("status", "published");
     if (type) query = query.eq("type", type);
-    if (lang) query = query.eq("lang", lang);
+    query = requestedLang === "it" ? query.eq("lang", "it") : query.in("lang", ["en", "it"]);
     if (widgetId) query = query.eq("widget_id", widgetId);
 
-    const { data, error, count } = await query
+    const { data, error } = await query
       .order("is_featured", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("publication_date", { ascending: false, nullsFirst: false })
       .order("event_start_at", { ascending: false, nullsFirst: false })
-      .order("event_date", { ascending: false })
-      .range(page * limit, page * limit + limit - 1);
+      .order("event_date", { ascending: false });
 
     if (error) {
       if (error.code === "PGRST116" || error.message?.includes("relation")) {
@@ -339,12 +351,23 @@ export async function getPublicEvents(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
     }
 
+    const localized = Array.from(
+      ((data ?? []) as VtxEventRow[]).reduce((groups, item) => {
+        const key = item.translation_group_id || String(item.id);
+        const current = groups.get(key);
+        if (!current || (item.lang === requestedLang && current.lang !== requestedLang)) groups.set(key, item);
+        return groups;
+      }, new Map<string, VtxEventRow>()),
+    ).map(([, item]) => item);
+    const start = page * limit;
+    const items = localized.slice(start, start + limit);
+
     return NextResponse.json({
-      items: (data ?? []) as VtxEventRow[],
-      count: count ?? 0,
+      items,
+      count: localized.length,
       page,
       limit,
-      total_pages: Math.ceil((count ?? 0) / limit),
+      total_pages: Math.ceil(localized.length / limit),
     });
   } catch (err) {
     console.error("GET /api/events error:", err);

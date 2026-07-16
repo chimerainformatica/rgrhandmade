@@ -11,43 +11,6 @@ import sharp from "sharp";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-async function syncCatalogueAcrossLanguages(
-  supabase: ReturnType<typeof createAdminClient>,
-  params: {
-    ref: string;
-    lang: string;
-    title?: string | null;
-    description?: string | null;
-    category?: string | null;
-    imgPath: string | null;
-    imgPosition: string | null;
-    status?: string | null;
-    sortOrder?: number | null;
-  },
-) {
-  const siblingLang = params.lang === "it" ? "en" : "it";
-  const { data: sibling } = await supabase
-    .from("catalogue")
-    .select("id")
-    .eq("ref", params.ref)
-    .eq("lang", siblingLang)
-    .maybeSingle();
-
-  if (sibling) {
-    const siblingUpdate: Record<string, string | number | null> = {};
-    if (params.title) siblingUpdate.title = params.title;
-    if (params.description !== undefined) siblingUpdate.description = params.description;
-    if (params.category) siblingUpdate.category = params.category;
-    if (params.imgPath) siblingUpdate.img_path = params.imgPath;
-    if (params.imgPosition) siblingUpdate.img_position = params.imgPosition;
-    if (params.status) siblingUpdate.status = params.status;
-    if (params.sortOrder !== undefined && params.sortOrder !== null) siblingUpdate.sort_order = params.sortOrder;
-    if (Object.keys(siblingUpdate).length > 0) {
-      await supabase.from("catalogue").update(siblingUpdate).eq("id", sibling.id);
-    }
-  }
-}
-
 // PATCH /api/vitrix/site-catalogue/[id]
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   try {
@@ -60,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     const supabase = createAdminClient();
     const { data: existing } = await supabase
       .from("catalogue")
-      .select("id,ref,lang,img_path,img_position,category,item_type,parent_id,parure_id")
+      .select("id,translation_group_id,ref,lang,img_path,img_position,category,item_type,parent_id,parure_id")
       .eq("id", id)
       .maybeSingle();
 
@@ -111,12 +74,21 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       const parentId = parentIdRaw ? parseInt(parentIdRaw) : null;
       update.parent_id = parentId;
       update.parure_id = parentId;
+      if (parentId) {
+        const { data: parent } = await supabase
+          .from("catalogue")
+          .select("translation_group_id")
+          .eq("id", parentId)
+          .maybeSingle();
+        update.parent_translation_group_id = parent?.translation_group_id ?? null;
+      } else {
+        update.parent_translation_group_id = null;
+      }
     }
     if (sortOrderRaw !== null) update.sort_order = parseInt(sortOrderRaw);
 
     const currentRef = (ref ?? existing?.ref) ?? null;
     const currentLang = (lang ?? existing?.lang) ?? null;
-    const currentImagePosition = imgPosition !== null ? (imgPosition || null) : existing?.img_position ?? null;
 
     // Optional image replace
     if (file && file.size > 0) {
@@ -201,47 +173,42 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       );
     }
 
-    const resolvedImagePath =
-      typeof update.img_path === "string"
-        ? update.img_path
-        : existing?.img_path ?? null;
-
-    if (currentRef && currentLang) {
-      await syncCatalogueAcrossLanguages(supabase, {
-        ref: currentRef,
-        lang: currentLang,
-        title: title,
-        description: description,
-        category: (category !== null ? update.category : existing?.category) ?? null,
-        imgPath: resolvedImagePath,
-        imgPosition: (update.img_position as string | null) ?? currentImagePosition,
-        status: status,
-        sortOrder: sortOrderRaw !== null ? parseInt(sortOrderRaw) : null,
-      });
-    }
-
     const finalCategory = (category !== null ? update.category : existing?.category) ?? null;
     const finalItemType = (update.item_type as string | undefined) ?? existing?.item_type ?? (finalCategory === "Parure" ? "collection" : "item");
     if (finalItemType === "collection") {
       await supabase
         .from("catalogue")
-        .update({ parent_id: null, parure_id: null })
-        .or(`parent_id.eq.${parseInt(id)},parure_id.eq.${parseInt(id)}`);
+        .update({ parent_id: null, parure_id: null, parent_translation_group_id: null })
+        .eq("parent_translation_group_id", existing?.translation_group_id);
 
       if (collectionItems.length > 0) {
-        const updatePromises = collectionItems.map((itemId: number) =>
+        const { data: selectedItems } = await supabase
+          .from("catalogue")
+          .select("translation_group_id")
+          .in("id", collectionItems);
+        const childGroups = Array.from(new Set((selectedItems ?? []).map((item) => item.translation_group_id)));
+        const { data: parentVariants } = await supabase
+          .from("catalogue")
+          .select("id,lang")
+          .eq("translation_group_id", existing?.translation_group_id);
+        await Promise.all((parentVariants ?? []).flatMap((parent) => childGroups.map((groupId) =>
           supabase
             .from("catalogue")
-            .update({ parent_id: parseInt(id), parure_id: parseInt(id), item_type: "item" })
-            .eq("id", itemId)
-        );
-        await Promise.all(updatePromises);
+            .update({
+              parent_id: parent.id,
+              parure_id: parent.id,
+              parent_translation_group_id: existing?.translation_group_id,
+              item_type: "item",
+            })
+            .eq("translation_group_id", groupId)
+            .eq("lang", parent.lang)
+        )));
       }
     } else if (existing?.item_type === "collection" || existing?.category === "Parure") {
       await supabase
         .from("catalogue")
-        .update({ parent_id: null, parure_id: null })
-        .or(`parent_id.eq.${parseInt(id)},parure_id.eq.${parseInt(id)}`);
+        .update({ parent_id: null, parure_id: null, parent_translation_group_id: null })
+        .eq("parent_translation_group_id", existing.translation_group_id);
     }
 
     return NextResponse.json({
@@ -259,7 +226,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 // DELETE /api/vitrix/site-catalogue/[id]
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(req: NextRequest, { params }: Ctx) {
   try {
     const auth = await requireVitrixApiPermission("vitrix.catalogue.write");
     if ("response" in auth) return auth.response;
@@ -270,16 +237,22 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     // Fetch current img_path to delete from storage if it's a Supabase URL
     const { data: existing } = await supabase
       .from("catalogue")
-      .select("img_path")
+      .select("img_path,translation_group_id")
       .eq("id", id)
       .single();
 
+    const deleteGroup = req.nextUrl.searchParams.get("scope") === "group";
+    const { data: targets } = deleteGroup && existing?.translation_group_id
+      ? await supabase.from("catalogue").select("id").eq("translation_group_id", existing.translation_group_id)
+      : { data: [{ id: Number(id) }] };
+    const targetIds = (targets ?? []).map((row) => row.id);
+
     await supabase
       .from("catalogue")
-      .update({ parent_id: null, parure_id: null })
-      .or(`parent_id.eq.${parseInt(id)},parure_id.eq.${parseInt(id)}`);
+      .update({ parent_id: null, parure_id: null, parent_translation_group_id: null })
+      .in("parent_id", targetIds);
 
-    const { error } = await supabase.from("catalogue").delete().eq("id", id);
+    const { error } = await supabase.from("catalogue").delete().in("id", targetIds);
 
     if (error) {
       console.error("site-catalogue DELETE error:", error);
@@ -291,7 +264,10 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     }
 
     // Clean up storage file if uploaded
-    if (existing?.img_path?.includes("/storage/v1/object/public/vitrix-media/")) {
+    const { count: remainingImageUsers } = existing?.img_path
+      ? await supabase.from("catalogue").select("id", { count: "exact", head: true }).eq("img_path", existing.img_path)
+      : { count: 0 };
+    if ((remainingImageUsers ?? 0) === 0 && existing?.img_path?.includes("/storage/v1/object/public/vitrix-media/")) {
       const storagePath = existing.img_path.split(
         "/storage/v1/object/public/vitrix-media/",
       )[1];
