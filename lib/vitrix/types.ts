@@ -60,6 +60,7 @@ export type VitrixPressRow = {
   event_start_at: string | null;
   event_end_at: string | null;
   event_date_label: string | null;
+  publication_date: string | null;
   main_image_path: string | null;
   main_image_url: string | null;
   og_image_path: string | null;
@@ -229,6 +230,7 @@ export const DEFAULT_CTX_CATALOGUE_CONFIG = DEFAULT_VTX_CATALOGUE_CONFIG;
 /** Riga evento/news arricchita (vedi migration 20260609000000_news_events). */
 export type VtxEventRow = {
   id: number;
+  translation_group_id: string;
   slug: string | null;
   type: VitrixPressType;
   category: string;
@@ -240,6 +242,7 @@ export type VtxEventRow = {
   event_start_at: string | null;
   event_end_at: string | null;
   event_date_label: string | null;
+  publication_date: string | null;
   main_image_path: string | null;
   main_image_url: string | null;
   og_image_path: string | null;
@@ -267,6 +270,16 @@ export type VtxEventRow = {
   body: string | null;
   created_at: string;
   updated_at: string | null;
+};
+
+export type VtxEventLanguage = "it" | "en";
+
+export type VtxEventTranslationGroup = {
+  id: string;
+  primary: VtxEventRow;
+  it: VtxEventRow | null;
+  en: VtxEventRow | null;
+  missingLanguages: VtxEventLanguage[];
 };
 
 export type VtxEventsConfig = {

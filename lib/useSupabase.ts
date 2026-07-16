@@ -89,6 +89,7 @@ export type NewsRow = {
   event_start_at?: string | null;
   event_end_at?: string | null;
   event_date_label?: string | null;
+  publication_date?: string | null;
   main_image_path?: string | null;
   main_image_url?: string | null;
   og_image_path?: string | null;

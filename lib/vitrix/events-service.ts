@@ -92,6 +92,7 @@ function eventsQueryFromSearchParams(req: NextRequest, supabase: SupabaseAdmin) 
     .select("*")
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
+    .order("publication_date", { ascending: false, nullsFirst: false })
     .order("event_start_at", { ascending: false, nullsFirst: false })
     .order("event_date", { ascending: false });
 
@@ -153,6 +154,55 @@ export async function createVitrixEvent(req: NextRequest) {
   }
 }
 
+export async function createVitrixEventTranslation(req: NextRequest, sourceId: string) {
+  try {
+    const auth = await requireVitrixApiPermission("vitrix.press.write");
+    if ("response" in auth) return auth.response;
+
+    const supabase = createAdminClient();
+    const { data: source, error: sourceError } = await supabase.from("news").select("*").eq("id", sourceId).single();
+    if (sourceError || !source) return NextResponse.json({ error: "Contenuto sorgente non trovato" }, { status: 404 });
+
+    const input = await eventInputFromRequest(req, supabase);
+    const targetLang = input.lang === "en" ? "en" : input.lang === "it" ? "it" : null;
+    if (!targetLang || targetLang === source.lang) {
+      return NextResponse.json({ error: "Lingua di traduzione non valida." }, { status: 400 });
+    }
+
+    const { data: existing } = await supabase
+      .from("news")
+      .select("id")
+      .eq("translation_group_id", source.translation_group_id)
+      .eq("lang", targetLang)
+      .maybeSingle();
+    if (existing) return NextResponse.json({ error: "La traduzione richiesta esiste gia." }, { status: 409 });
+
+    const payload = normalizeEventPayload({
+      ...source,
+      ...input,
+      id: undefined,
+      lang: targetLang,
+      translation_group_id: source.translation_group_id,
+      status: input.status ?? "draft",
+      published_at: null,
+    });
+    const validationError = validateEventPayload(payload);
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
+
+    const { data, error } = await supabase.from("news").insert(payload).select().single();
+    if (error) {
+      await logVitrixError(error, "/api/vitrix/events/[id]/translations");
+      return NextResponse.json({ error: eventWriteError(error, "creare") }, { status: error.code === "23505" ? 409 : 500 });
+    }
+
+    return NextResponse.json({ success: true, item: data as VtxEventRow }, { status: 201 });
+  } catch (err) {
+    console.error("POST /api/vitrix/events/[id]/translations error:", err);
+    await logVitrixError(err, "/api/vitrix/events/[id]/translations");
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function getVitrixEventById(_req: NextRequest, id: string) {
   try {
     const auth = await requireVitrixApiPermission("vitrix.read");
@@ -195,12 +245,22 @@ export async function updateVitrixEvent(req: NextRequest, id: string) {
   }
 }
 
-export async function deleteVitrixEvent(_req: NextRequest, id: string) {
+export async function deleteVitrixEvent(req: NextRequest, id: string) {
   try {
     const auth = await requireVitrixApiPermission("vitrix.press.write");
     if ("response" in auth) return auth.response;
 
-    const { error } = await createAdminClient().from("news").delete().eq("id", id);
+    const supabase = createAdminClient();
+    const scope = req.nextUrl.searchParams.get("scope");
+    let query = supabase.from("news").delete();
+    if (scope === "group") {
+      const { data: current, error: currentError } = await supabase.from("news").select("translation_group_id").eq("id", id).single();
+      if (currentError || !current) return NextResponse.json({ error: "Evento non trovato" }, { status: 404 });
+      query = query.eq("translation_group_id", current.translation_group_id);
+    } else {
+      query = query.eq("id", id);
+    }
+    const { error } = await query;
     if (error) return NextResponse.json({ error: "Failed to delete event" }, { status: 500 });
 
     return NextResponse.json({ success: true });
@@ -267,6 +327,7 @@ export async function getPublicEvents(req: NextRequest) {
     const { data, error, count } = await query
       .order("is_featured", { ascending: false })
       .order("sort_order", { ascending: true })
+      .order("publication_date", { ascending: false, nullsFirst: false })
       .order("event_start_at", { ascending: false, nullsFirst: false })
       .order("event_date", { ascending: false })
       .range(page * limit, page * limit + limit - 1);

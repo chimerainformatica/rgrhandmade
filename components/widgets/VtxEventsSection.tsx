@@ -35,6 +35,12 @@ const copy = {
 const coverOf = (item: NewsRow) => item.main_image_url ?? item.cover_image ?? item.main_image_path ?? null;
 const dateOf = (item: NewsRow) => item.event_date_label ?? item.event_date ?? "";
 const excerptOf = (item: NewsRow) => item.excerpt ?? item.description ?? "";
+const publicationMonthOf = (item: NewsRow, lang: Lang) => {
+  if (!item.publication_date) return "";
+  const date = new Date(`${item.publication_date.slice(0, 7)}-01T12:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(lang === "it" ? "it-IT" : "en-GB", { month: "long", year: "numeric" }).format(date);
+};
 const VALID_EVENT_TYPES = new Set(["event", "fiera", "press"]);
 
 function isValidEventType(type: string | null | undefined): type is "event" | "fiera" | "press" {
@@ -243,7 +249,7 @@ function PublicationCardsSkeleton() {
 function PublicationCard({ item, index, lang, onPreview }: { item: NewsRow; index: number; lang: Lang; onPreview: (preview: ImagePreview, trigger: HTMLButtonElement) => void }) {
   const zoomUrl = getZoomImageUrl(coverOf(item));
   const alt = item.image_alt || item.title;
-  const edition = dateOf(item);
+  const edition = [publicationMonthOf(item, lang), dateOf(item)].filter(Boolean).join(" · ");
 
   return (
     <motion.article
@@ -294,7 +300,10 @@ export function VtxEventsSection({ config, lang }: Props) {
     ? uniqueById([...displayed.filter((item) => item.is_featured), ...displayed])
     : displayed, [config.featured_first, displayed]);
   const eventItems = useMemo(() => orderedItems.filter((item) => item.type !== "publication").slice(0, config.items_limit || 6), [config.items_limit, orderedItems]);
-  const publicationItems = useMemo(() => orderedItems.filter((item) => item.type === "publication").slice(0, config.publications.items_limit || 8), [config.publications.items_limit, orderedItems]);
+  const publicationItems = useMemo(() => orderedItems
+    .filter((item) => item.type === "publication")
+    .sort((a, b) => Date.parse(b.publication_date ?? "") - Date.parse(a.publication_date ?? ""))
+    .slice(0, config.publications.items_limit || 8), [config.publications.items_limit, orderedItems]);
 
   useEffect(() => {
     if (loading) return;
