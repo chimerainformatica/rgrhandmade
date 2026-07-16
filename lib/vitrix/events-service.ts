@@ -92,6 +92,7 @@ function eventsQueryFromSearchParams(req: NextRequest, supabase: SupabaseAdmin) 
     .select("*")
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
+    .order("publication_date", { ascending: false, nullsFirst: false })
     .order("event_start_at", { ascending: false, nullsFirst: false })
     .order("event_date", { ascending: false });
 
@@ -139,16 +140,77 @@ export async function createVitrixEvent(req: NextRequest) {
     const validationError = validateEventPayload(payload);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
-    const { data, error } = await supabase.from("news").insert(payload).select().single();
+    const translationGroupId = payload.translation_group_id ?? crypto.randomUUID();
+    const source = { ...payload, translation_group_id: translationGroupId };
+    const sibling = {
+      ...source,
+      lang: source.lang === "en" ? "it" : "en",
+      status: "draft" as const,
+      published_at: null,
+    };
+    const { data, error } = await supabase.from("news").insert([source, sibling]).select();
     if (error) {
       await logVitrixError(error, "/api/vitrix/events");
       return NextResponse.json({ error: eventWriteError(error, "creare") }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, item: data as VtxEventRow }, { status: 201 });
+    const created = (data ?? []) as VtxEventRow[];
+    return NextResponse.json(
+      { success: true, item: created.find((item) => item.lang === source.lang) ?? created[0], translations: created },
+      { status: 201 },
+    );
   } catch (err) {
     console.error("POST /api/vitrix/events error:", err);
     await logVitrixError(err, "/api/vitrix/events");
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function createVitrixEventTranslation(req: NextRequest, sourceId: string) {
+  try {
+    const auth = await requireVitrixApiPermission("vitrix.press.write");
+    if ("response" in auth) return auth.response;
+
+    const supabase = createAdminClient();
+    const { data: source, error: sourceError } = await supabase.from("news").select("*").eq("id", sourceId).single();
+    if (sourceError || !source) return NextResponse.json({ error: "Contenuto sorgente non trovato" }, { status: 404 });
+
+    const input = await eventInputFromRequest(req, supabase);
+    const targetLang = input.lang === "en" ? "en" : input.lang === "it" ? "it" : null;
+    if (!targetLang || targetLang === source.lang) {
+      return NextResponse.json({ error: "Lingua di traduzione non valida." }, { status: 400 });
+    }
+
+    const { data: existing } = await supabase
+      .from("news")
+      .select("id")
+      .eq("translation_group_id", source.translation_group_id)
+      .eq("lang", targetLang)
+      .maybeSingle();
+    if (existing) return NextResponse.json({ error: "La traduzione richiesta esiste gia." }, { status: 409 });
+
+    const payload = normalizeEventPayload({
+      ...source,
+      ...input,
+      id: undefined,
+      lang: targetLang,
+      translation_group_id: source.translation_group_id,
+      status: input.status ?? "draft",
+      published_at: null,
+    });
+    const validationError = validateEventPayload(payload);
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
+
+    const { data, error } = await supabase.from("news").insert(payload).select().single();
+    if (error) {
+      await logVitrixError(error, "/api/vitrix/events/[id]/translations");
+      return NextResponse.json({ error: eventWriteError(error, "creare") }, { status: error.code === "23505" ? 409 : 500 });
+    }
+
+    return NextResponse.json({ success: true, item: data as VtxEventRow }, { status: 201 });
+  } catch (err) {
+    console.error("POST /api/vitrix/events/[id]/translations error:", err);
+    await logVitrixError(err, "/api/vitrix/events/[id]/translations");
     return NextResponse.json({ error: err instanceof Error ? err.message : "Internal server error" }, { status: 500 });
   }
 }
@@ -195,12 +257,22 @@ export async function updateVitrixEvent(req: NextRequest, id: string) {
   }
 }
 
-export async function deleteVitrixEvent(_req: NextRequest, id: string) {
+export async function deleteVitrixEvent(req: NextRequest, id: string) {
   try {
     const auth = await requireVitrixApiPermission("vitrix.press.write");
     if ("response" in auth) return auth.response;
 
-    const { error } = await createAdminClient().from("news").delete().eq("id", id);
+    const supabase = createAdminClient();
+    const scope = req.nextUrl.searchParams.get("scope");
+    let query = supabase.from("news").delete();
+    if (scope === "group") {
+      const { data: current, error: currentError } = await supabase.from("news").select("translation_group_id").eq("id", id).single();
+      if (currentError || !current) return NextResponse.json({ error: "Evento non trovato" }, { status: 404 });
+      query = query.eq("translation_group_id", current.translation_group_id);
+    } else {
+      query = query.eq("id", id);
+    }
+    const { error } = await query;
     if (error) return NextResponse.json({ error: "Failed to delete event" }, { status: 500 });
 
     return NextResponse.json({ success: true });
@@ -259,17 +331,18 @@ export async function getPublicEvents(req: NextRequest) {
     const limit = Math.min(Number.parseInt(searchParams.get("limit") || "50", 10), 100);
     const page = Math.max(Number.parseInt(searchParams.get("page") || "0", 10), 0);
 
-    let query = supabase.from("news").select("*", { count: "exact" }).eq("status", "published");
+    const requestedLang = lang === "en" ? "en" : "it";
+    let query = supabase.from("news").select("*").eq("status", "published");
     if (type) query = query.eq("type", type);
-    if (lang) query = query.eq("lang", lang);
+    query = requestedLang === "it" ? query.eq("lang", "it") : query.in("lang", ["en", "it"]);
     if (widgetId) query = query.eq("widget_id", widgetId);
 
-    const { data, error, count } = await query
+    const { data, error } = await query
       .order("is_featured", { ascending: false })
       .order("sort_order", { ascending: true })
+      .order("publication_date", { ascending: false, nullsFirst: false })
       .order("event_start_at", { ascending: false, nullsFirst: false })
-      .order("event_date", { ascending: false })
-      .range(page * limit, page * limit + limit - 1);
+      .order("event_date", { ascending: false });
 
     if (error) {
       if (error.code === "PGRST116" || error.message?.includes("relation")) {
@@ -278,12 +351,23 @@ export async function getPublicEvents(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
     }
 
+    const localized = Array.from(
+      ((data ?? []) as VtxEventRow[]).reduce((groups, item) => {
+        const key = item.translation_group_id || String(item.id);
+        const current = groups.get(key);
+        if (!current || (item.lang === requestedLang && current.lang !== requestedLang)) groups.set(key, item);
+        return groups;
+      }, new Map<string, VtxEventRow>()),
+    ).map(([, item]) => item);
+    const start = page * limit;
+    const items = localized.slice(start, start + limit);
+
     return NextResponse.json({
-      items: (data ?? []) as VtxEventRow[],
-      count: count ?? 0,
+      items,
+      count: localized.length,
       page,
       limit,
-      total_pages: Math.ceil((count ?? 0) / limit),
+      total_pages: Math.ceil(localized.length / limit),
     });
   } catch (err) {
     console.error("GET /api/events error:", err);

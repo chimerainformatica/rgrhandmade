@@ -2,6 +2,7 @@ export type CatalogueCategoryRow = {
   id: string;
   catalogue_key: string;
   name: string;
+  name_en: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -26,7 +27,7 @@ export async function listCatalogueCategories(
 ): Promise<CatalogueCategoryRow[]> {
   const { data, error } = await supabase
     .from("catalogue_categories")
-    .select("id,catalogue_key,name,sort_order,created_at,updated_at")
+    .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
     .eq("catalogue_key", CATALOGUE_KEY)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -66,9 +67,10 @@ export async function ensureCatalogueCategory(
     .insert({
       catalogue_key: CATALOGUE_KEY,
       name: normalizedName,
+      name_en: normalizedName,
       sort_order: nextSortOrder,
     })
-    .select("id,catalogue_key,name,sort_order,created_at,updated_at")
+    .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
     .single();
 
   if (error) throw error;
@@ -88,7 +90,7 @@ export async function renameCatalogueCategory(
 
   const { data: current, error: currentError } = await supabase
     .from("catalogue_categories")
-    .select("id,catalogue_key,name,sort_order,created_at,updated_at")
+    .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
     .eq("catalogue_key", CATALOGUE_KEY)
     .eq("id", id)
     .maybeSingle();
@@ -112,7 +114,7 @@ export async function renameCatalogueCategory(
     })
     .eq("catalogue_key", CATALOGUE_KEY)
     .eq("id", id)
-    .select("id,catalogue_key,name,sort_order,created_at,updated_at")
+    .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
     .single();
 
   if (error) throw error;
@@ -131,7 +133,7 @@ export async function deleteCatalogueCategory(
 ) {
   const { data: current, error } = await supabase
     .from("catalogue_categories")
-    .select("id,catalogue_key,name,sort_order,created_at,updated_at")
+    .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
     .eq("catalogue_key", CATALOGUE_KEY)
     .eq("id", id)
     .maybeSingle();
@@ -166,7 +168,7 @@ export async function reorderCatalogueCategories(
 ) {
   const { data: current, error } = await supabase
     .from("catalogue_categories")
-    .select("id,catalogue_key,name,sort_order,created_at,updated_at")
+    .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
     .eq("catalogue_key", CATALOGUE_KEY)
     .in("id", items.map((item) => item.id));
 

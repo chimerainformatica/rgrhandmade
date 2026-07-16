@@ -40,6 +40,7 @@ export type EventFormValues = {
   category: string;
   venue: string;
   event_date: string;
+  publication_date: string;
   event_start_at: string;
   event_end_at: string;
   lang: string;
@@ -67,13 +68,13 @@ type FormErrors = Partial<Record<keyof EventFormValues | "main_image", string>>;
 
 type Props = {
   open: boolean;
-  mode: "create" | "edit";
+  mode: "create" | "edit" | "translate";
   event: VtxEventRow | null;
+  sourceEvent: VtxEventRow | null;
   value: EventFormValues;
   categories: EventCategoryRow[];
   imageFile: File | null;
   saving: boolean;
-  onChange: (value: EventFormValues) => void;
   onImageFileChange: (file: File | null) => void;
   onClose: () => void;
   onSave: (value: EventFormValues) => Promise<void> | void;
@@ -135,15 +136,22 @@ function helper(errors: FormErrors, key: keyof EventFormValues, fallback?: strin
   return errors[key] || fallback || " ";
 }
 
+function formatPublicationMonth(value: string, lang: string) {
+  if (!value) return "Mese / anno";
+  const date = new Date(`${value}-01T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "it-IT", { month: "long", year: "numeric" }).format(date);
+}
+
 export function EditEventDialog({
   open,
   mode,
   event,
+  sourceEvent,
   value: initialValue,
   categories,
   imageFile,
   saving,
-  onChange,
   onImageFileChange,
   onClose,
   onSave,
@@ -159,6 +167,7 @@ export function EditEventDialog({
   const [value, setValue] = useState(initialValue);
   initialValueRef.current = initialValue;
   const isPublication = value.type === "publication";
+  const isTranslation = mode === "translate" && Boolean(sourceEvent);
 
   const previewImage = useMemo(() => {
     if (imageFile) return URL.createObjectURL(imageFile);
@@ -212,6 +221,7 @@ export function EditEventDialog({
     if (!current.type) next.type = "Tipo obbligatorio.";
     if (!current.status) next.status = "Stato obbligatorio.";
     if (!current.event_date.trim()) next.event_date = current.type === "publication" ? "Numero o edizione obbligatorio." : "Data label obbligatoria.";
+    if (current.type === "publication" && !current.publication_date) next.publication_date = "Mese e anno obbligatori.";
     if (current.type !== "publication") {
       if (current.excerpt.length > 180) next.excerpt = "Massimo 180 caratteri.";
       if (current.seo_description.length > 160) next.seo_description = "Massimo 160 caratteri.";
@@ -233,7 +243,6 @@ export function EditEventDialog({
     const normalizedValue = { ...value, widget_id: VTX_EVENTS_WIDGET_ID };
     const candidate = normalizedValue.slug.trim() ? normalizedValue : { ...normalizedValue, slug: slugify(normalizedValue.title) };
     if (!validate(candidate)) return;
-    onChange(candidate);
     await onSave(candidate);
     setDirty(false);
   }
@@ -249,12 +258,29 @@ export function EditEventDialog({
 
   const formColumn = (
     <Stack spacing={2.25}>
+      {isTranslation && sourceEvent && (
+        <Paper sx={{ p: 2, border: "1px solid rgba(25,118,210,.25)", borderRadius: "12px", boxShadow: "none", bgcolor: "rgba(25,118,210,.045)" }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { sm: "center" } }}>
+            <Box>
+              <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--vx-primary)" }}>Testo sorgente · {sourceEvent.lang.toUpperCase()}</Typography>
+              <Typography sx={{ mt: 0.55, fontSize: 15, fontWeight: 750, color: "var(--vx-text-primary)" }}>{sourceEvent.title}</Typography>
+              {(sourceEvent.excerpt || sourceEvent.description) && <Typography sx={{ mt: 0.4, maxWidth: 720, fontSize: 12.5, color: "var(--vx-text-secondary)" }}>{sourceEvent.excerpt || sourceEvent.description}</Typography>}
+            </Box>
+            <Chip label={`Nuova versione ${value.lang.toUpperCase()}`} color="primary" size="small" sx={{ fontWeight: 750 }} />
+          </Stack>
+          <Typography sx={{ mt: 1.25, fontSize: 11.5, color: "var(--vx-text-muted)" }}>Compila i campi testuali nella nuova lingua. Media, date strutturate, tipo, evidenza e ordinamento restano sincronizzati.</Typography>
+        </Paper>
+      )}
       <Paper sx={{ p: 2, border: "1px solid var(--vx-border)", borderRadius: "12px", boxShadow: "none" }}>
         {sectionTitle(1, isPublication ? "Dati pubblicazione" : "Dati principali")}
         <Stack spacing={1.75}>
           <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
-            <TextField label="Titolo *" value={value.title} onChange={(e) => update({ title: e.target.value, slug: value.slug || slugify(e.target.value) })} error={fieldError(errors, "title")} helperText={helper(errors, "title", `${value.title.length}/180`)} fullWidth sx={fieldSx} />
+            <TextField label="Titolo *" value={value.title} onChange={(e) => update({ title: e.target.value, slug: value.slug || slugify(e.target.value) })} error={fieldError(errors, "title")} helperText={helper(errors, "title", `${value.title.length}/180`)} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />
             {!isPublication && <TextField label="Slug SEO *" value={value.slug} onChange={(e) => update({ slug: slugify(e.target.value) })} error={fieldError(errors, "slug")} helperText={helper(errors, "slug")} fullWidth sx={fieldSx} />}
+            {!isPublication && <TextField select label="Lingua" value={value.lang} onChange={(e) => update({ lang: e.target.value })} disabled={mode !== "create"} sx={{ ...fieldSx, minWidth: 150 }}>
+              <MenuItem value="it">Italiano</MenuItem>
+              <MenuItem value="en">English</MenuItem>
+            </TextField>}
           </Stack>
           {!isPublication && <TextField label="Descrizione breve / excerpt" value={value.excerpt} onChange={(e) => update({ excerpt: e.target.value })} error={fieldError(errors, "excerpt")} helperText={helper(errors, "excerpt", `${value.excerpt.length}/180`)} fullWidth multiline minRows={2} slotProps={{ htmlInput: { maxLength: 180 } }} sx={fieldSx} />}
         </Stack>
@@ -264,7 +290,7 @@ export function EditEventDialog({
         {sectionTitle(2, isPublication ? "Edizione & pubblicazione" : "Scheduling & location")}
         <Stack spacing={1.75}>
           <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
-            <TextField select label="Tipo *" value={value.type} onChange={(e) => updateType(e.target.value as VitrixPressType)} error={fieldError(errors, "type")} helperText={helper(errors, "type")} fullWidth sx={fieldSx}>
+            <TextField select label="Tipo *" value={value.type} onChange={(e) => updateType(e.target.value as VitrixPressType)} disabled={isTranslation} error={fieldError(errors, "type")} helperText={helper(errors, "type")} fullWidth sx={fieldSx}>
               <MenuItem value="event">Evento</MenuItem>
               <MenuItem value="fiera">Fiera</MenuItem>
               <MenuItem value="press">Press</MenuItem>
@@ -274,17 +300,18 @@ export function EditEventDialog({
               <MenuItem value="draft">Bozza</MenuItem>
               <MenuItem value="published">Pubblicato</MenuItem>
             </TextField>
-            <TextField label="Ordinamento" type="number" value={value.sort_order} onChange={(e) => update({ sort_order: Number(e.target.value) })} sx={fieldSx} />
+            <TextField label="Ordinamento" type="number" value={value.sort_order} onChange={(e) => update({ sort_order: Number(e.target.value) })} disabled={isTranslation} sx={fieldSx} />
           </Stack>
           {isPublication ? (
-            <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
-              <TextField label="Numero / edizione *" value={value.event_date} onChange={(e) => update({ event_date: e.target.value })} error={fieldError(errors, "event_date")} helperText={helper(errors, "event_date", "Es. n. 236 · Apr./Mag. 2025")} fullWidth sx={fieldSx} />
-              <TextField select label="Lingua" value={value.lang} onChange={(e) => update({ lang: e.target.value })} fullWidth sx={fieldSx}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(180px, .8fr) minmax(220px, 1fr)", lg: "minmax(170px, .72fr) minmax(210px, 1fr) minmax(180px, .8fr) auto" }, gap: 1.5, alignItems: "start" }}>
+              <TextField label="Mese / anno *" type="month" value={value.publication_date} onChange={(e) => update({ publication_date: e.target.value })} disabled={isTranslation} error={fieldError(errors, "publication_date")} helperText={helper(errors, "publication_date", "Determina l’ordine sul frontend.")} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />
+              <TextField label="Numero / edizione *" value={value.event_date} onChange={(e) => update({ event_date: e.target.value })} disabled={isTranslation} error={fieldError(errors, "event_date")} helperText={helper(errors, "event_date", "Es. n. 236 · Apr./Mag. 2025")} fullWidth sx={fieldSx} />
+              <TextField select label="Lingua" value={value.lang} onChange={(e) => update({ lang: e.target.value })} disabled={mode !== "create"} fullWidth sx={fieldSx}>
                 <MenuItem value="it">Italiano</MenuItem>
                 <MenuItem value="en">English</MenuItem>
               </TextField>
-              <FormControlLabel control={<Switch checked={value.is_featured} onChange={(e) => update({ is_featured: e.target.checked })} />} label="In evidenza" sx={{ minWidth: 150 }} />
-            </Stack>
+              <FormControlLabel control={<Switch checked={value.is_featured} onChange={(e) => update({ is_featured: e.target.checked })} disabled={isTranslation} />} label="In evidenza" sx={{ minWidth: 150 }} />
+            </Box>
           ) : (
             <>
               <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
@@ -292,8 +319,8 @@ export function EditEventDialog({
                 <TextField label="Data label *" value={value.event_date} onChange={(e) => update({ event_date: e.target.value })} error={fieldError(errors, "event_date")} helperText={helper(errors, "event_date")} fullWidth placeholder="es. Marzo 2026" sx={fieldSx} />
               </Stack>
               <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
-                <TextField label="Inizio evento" type="datetime-local" value={value.event_start_at} onChange={(e) => update({ event_start_at: e.target.value })} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />
-                <TextField label="Fine evento" type="datetime-local" value={value.event_end_at} onChange={(e) => update({ event_end_at: e.target.value })} error={fieldError(errors, "event_end_at")} helperText={helper(errors, "event_end_at")} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />
+                <TextField label="Inizio evento" type="datetime-local" value={value.event_start_at} onChange={(e) => update({ event_start_at: e.target.value })} disabled={isTranslation} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />
+                <TextField label="Fine evento" type="datetime-local" value={value.event_end_at} onChange={(e) => update({ event_end_at: e.target.value })} disabled={isTranslation} error={fieldError(errors, "event_end_at")} helperText={helper(errors, "event_end_at")} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />
               </Stack>
               <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
             <Autocomplete
@@ -332,8 +359,8 @@ export function EditEventDialog({
         {sectionTitle(4, "CTA")}
         <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5}>
           <TextField label="CTA label" value={value.cta_label} onChange={(e) => update({ cta_label: e.target.value })} fullWidth sx={fieldSx} />
-          <TextField label="CTA URL" value={value.cta_url} onChange={(e) => update({ cta_url: e.target.value })} error={fieldError(errors, "cta_url")} helperText={helper(errors, "cta_url")} fullWidth sx={fieldSx} />
-          <TextField select label="Target" value={value.cta_target} onChange={(e) => update({ cta_target: e.target.value as "_self" | "_blank" })} sx={fieldSx}>
+          <TextField label="CTA URL" value={value.cta_url} onChange={(e) => update({ cta_url: e.target.value })} disabled={isTranslation} error={fieldError(errors, "cta_url")} helperText={helper(errors, "cta_url")} fullWidth sx={fieldSx} />
+          <TextField select label="Target" value={value.cta_target} onChange={(e) => update({ cta_target: e.target.value as "_self" | "_blank" })} disabled={isTranslation} sx={fieldSx}>
             <MenuItem value="_self">Stessa pagina</MenuItem>
             <MenuItem value="_blank">Nuova finestra</MenuItem>
           </TextField>
@@ -344,7 +371,7 @@ export function EditEventDialog({
         {sectionTitle(5, "SEO & visibilita")}
         <Stack spacing={1.75}>
           <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap" }}>
-            <FormControlLabel control={<Switch checked={value.is_featured} onChange={(e) => update({ is_featured: e.target.checked })} />} label="In evidenza" />
+            <FormControlLabel control={<Switch checked={value.is_featured} onChange={(e) => update({ is_featured: e.target.checked })} disabled={isTranslation} />} label="In evidenza" />
             <FormControlLabel control={<Switch checked={value.robots_index} onChange={(e) => update({ robots_index: e.target.checked })} />} label="Robots index" />
             <FormControlLabel control={<Switch checked={value.robots_follow} onChange={(e) => update({ robots_follow: e.target.checked })} />} label="Robots follow" />
           </Stack>
@@ -379,7 +406,7 @@ export function EditEventDialog({
         />
       </Stack>
       <Paper sx={{ border: "1px solid var(--vx-border)", borderRadius: "14px", overflow: "hidden", boxShadow: "none", bgcolor: "var(--vx-surface)" }}>
-        <Box sx={{ aspectRatio: isPublication ? "3 / 4" : "16 / 10", maxHeight: isPublication ? { xs: 240, sm: 280, lg: 300 } : undefined, bgcolor: "var(--vx-surface-muted)", position: "relative" }}>
+        <Box sx={{ aspectRatio: isPublication ? "3 / 4" : "16 / 10", width: isPublication ? { xs: "min(160px, 100%)", sm: 160 } : "100%", maxHeight: isPublication ? 213 : undefined, mx: isPublication ? "auto" : 0, mt: isPublication ? 2 : 0, border: isPublication ? "1px solid var(--vx-border)" : 0, bgcolor: "var(--vx-surface-muted)", position: "relative", overflow: "hidden" }}>
           {previewImage ? (
             <Box component="img" src={previewImage} alt={value.image_alt || value.title || "Anteprima evento"} sx={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: value.image_position }} />
           ) : (
@@ -388,19 +415,19 @@ export function EditEventDialog({
             </Box>
           )}
           {(previewImage || imageFile) && (
-            <IconButton size="small" aria-label="Rimuovi immagine" onClick={() => { onImageFileChange(null); update({ main_image_url: "" }); }} sx={{ position: "absolute", top: 8, right: 8, bgcolor: "rgba(255,255,255,.9)", "&:hover": { bgcolor: "#fff" } }}>
+            <IconButton size="small" disabled={isTranslation} aria-label="Rimuovi immagine" onClick={() => { onImageFileChange(null); update({ main_image_url: "" }); }} sx={{ position: "absolute", top: 8, right: 8, bgcolor: "rgba(255,255,255,.9)", "&:hover": { bgcolor: "#fff" } }}>
               <CloseOutlinedIcon sx={{ fontSize: 16 }} />
             </IconButton>
           )}
         </Box>
         <Box sx={{ p: 2, borderTop: "1px solid var(--vx-border)", borderBottom: "1px solid var(--vx-border)" }}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: { sm: "center" }, justifyContent: "space-between", mb: 1.5 }}>
-            <Button component="label" variant="outlined" startIcon={<UploadFileOutlinedIcon />} sx={{ textTransform: "none", borderRadius: "8px", borderColor: "var(--vx-border)", color: "var(--vx-text-secondary)" }}>
+            <Button component="label" variant="outlined" disabled={isTranslation} startIcon={<UploadFileOutlinedIcon />} sx={{ textTransform: "none", borderRadius: "8px", borderColor: "var(--vx-border)", color: "var(--vx-text-secondary)" }}>
               {previewImage ? (isPublication ? "Sostituisci copertina" : "Sostituisci immagine") : (isPublication ? "Sfoglia copertina" : "Sfoglia immagine")}
               <input hidden type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(e) => { const file = e.target.files?.[0] ?? null; onImageFileChange(file); setDirty(true); if (file) update({ image_alt: value.image_alt || value.title }); e.currentTarget.value = ""; }} />
             </Button>
             {previewImage && (
-              <Button color="error" size="small" onClick={() => { onImageFileChange(null); update({ main_image_url: "" }); }} sx={{ textTransform: "none", borderRadius: "8px" }}>
+              <Button color="error" size="small" disabled={isTranslation} onClick={() => { onImageFileChange(null); update({ main_image_url: "" }); }} sx={{ textTransform: "none", borderRadius: "8px" }}>
                 Rimuovi
               </Button>
             )}
@@ -409,9 +436,9 @@ export function EditEventDialog({
             {errors.main_image || (imageFile ? `${imageFile.name} · conversione WebP al salvataggio` : "JPG, PNG, WebP o AVIF · massimo 10 MB")}
           </Typography>
           <Stack spacing={1.5}>
-            <TextField size="small" label={isPublication ? "URL copertina" : "URL immagine principale"} value={value.main_image_url} onChange={(e) => update({ main_image_url: e.target.value })} error={Boolean(errors.main_image)} fullWidth sx={fieldSx} />
+            <TextField size="small" label={isPublication ? "URL copertina" : "URL immagine principale"} value={value.main_image_url} onChange={(e) => update({ main_image_url: e.target.value })} disabled={isTranslation} error={Boolean(errors.main_image)} fullWidth sx={fieldSx} />
             <TextField size="small" label="Testo alternativo" value={value.image_alt} onChange={(e) => update({ image_alt: e.target.value })} fullWidth sx={fieldSx} />
-            <TextField size="small" select label="Posizione immagine" value={value.image_position} onChange={(e) => update({ image_position: e.target.value })} fullWidth sx={fieldSx}>
+            <TextField size="small" select label="Posizione immagine" value={value.image_position} onChange={(e) => update({ image_position: e.target.value })} disabled={isTranslation} fullWidth sx={fieldSx}>
               {objectPositionPresets.map(([position, label]) => <MenuItem key={position} value={position}>{label} ({position})</MenuItem>)}
             </TextField>
           </Stack>
@@ -429,7 +456,7 @@ export function EditEventDialog({
             {value.excerpt || value.description || "Descrizione breve visibile nella card del frontend."}
           </Typography>}
           <Typography sx={{ fontSize: 12, color: "var(--vx-text-muted)" }}>
-            {value.event_date || (isPublication ? "Numero / edizione" : "Data label")}{!isPublication && value.venue ? ` · ${value.venue}` : ""}
+            {isPublication ? `${formatPublicationMonth(value.publication_date, value.lang)}${value.event_date ? ` · ${value.event_date}` : ""}` : `${value.event_date || "Data label"}${value.venue ? ` · ${value.venue}` : ""}`}
           </Typography>
         </Box>
       </Paper>
@@ -452,15 +479,15 @@ export function EditEventDialog({
 
   return (
     <>
-      <Dialog open={open} onClose={requestClose} fullScreen={fullScreen} maxWidth="xl" fullWidth sx={{ zIndex: 1400 }} slotProps={{ paper: { sx: { bgcolor: "var(--vx-bg)", color: "var(--vx-text-primary)", borderRadius: fullScreen ? 0 : "16px", overflow: "hidden" } } }}>
+      <Dialog open={open} onClose={requestClose} fullScreen={fullScreen} maxWidth="xl" fullWidth sx={{ zIndex: 1400 }} slotProps={{ paper: { sx: { bgcolor: "var(--vx-bg)", color: "var(--vx-text-primary)", borderRadius: fullScreen ? 0 : "16px", overflow: "hidden", maxHeight: fullScreen ? "100%" : "94vh" } } }}>
         <DialogTitle sx={{ p: 0, borderBottom: "1px solid var(--vx-border)", bgcolor: "var(--vx-surface)" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: { xs: 2, md: 3 }, py: 2, width: "100%" }}>
             <Box sx={{ p: 0.8, borderRadius: "9px", bgcolor: "var(--vx-primary-soft)", color: "var(--vx-primary)", display: "flex" }}>
               <ArticleOutlinedIcon sx={{ fontSize: 18 }} />
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography sx={{ fontSize: 16, fontWeight: 800 }}>{mode === "edit" ? (isPublication ? "Modifica pubblicazione" : "Modifica evento") : (isPublication ? "Aggiungi pubblicazione" : "Aggiungi evento")}</Typography>
-              <Typography sx={{ fontSize: 12, color: "var(--vx-text-muted)" }}>{isPublication ? "Gestisci copertina, edizione e visibilita." : "Aggiorna contenuti, media, SEO e visibilita."}</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800 }}>{isTranslation ? `Crea traduzione ${value.lang.toUpperCase()}` : mode === "edit" ? (isPublication ? "Modifica pubblicazione" : "Modifica evento") : (isPublication ? "Aggiungi pubblicazione" : "Aggiungi evento")}</Typography>
+              <Typography sx={{ fontSize: 12, color: "var(--vx-text-muted)" }}>{isTranslation ? `Traduzione manuale guidata dalla versione ${sourceEvent?.lang.toUpperCase()}.` : isPublication ? "Gestisci copertina, edizione e visibilita." : "Aggiorna contenuti, media, SEO e visibilita."}</Typography>
             </Box>
             {mode === "edit" && event && (
               <Button size="small" color="error" startIcon={<DeleteOutlinedIcon />} onClick={() => setConfirmDelete(true)} sx={{ display: { xs: "none", sm: "inline-flex" }, textTransform: "none", borderRadius: "8px" }}>
@@ -485,7 +512,7 @@ export function EditEventDialog({
               gridTemplateColumns: {
                 xs: "1fr",
                 lg: isPublication
-                  ? "minmax(0, 1.4fr) minmax(320px, 1fr)"
+                  ? "minmax(0, 1.8fr) minmax(300px, .72fr)"
                   : "minmax(0, 1.85fr) minmax(320px, 1fr)",
               },
               gap: 2.5,
@@ -503,7 +530,7 @@ export function EditEventDialog({
             Annulla
           </Button>
           <Button onClick={save} disabled={saving} variant="contained" startIcon={saving ? <CircularProgress size={14} color="inherit" /> : null} sx={{ textTransform: "none", fontSize: 13, fontWeight: 700, borderRadius: "8px", background: "var(--vx-gradient-brand)", boxShadow: "none" }}>
-            {saving ? "Salvataggio..." : mode === "edit" ? "Salva modifiche" : isPublication ? "Crea pubblicazione" : "Crea evento"}
+            {saving ? "Salvataggio..." : mode === "edit" ? "Salva modifiche" : isTranslation ? `Crea versione ${value.lang.toUpperCase()}` : isPublication ? "Crea pubblicazione" : "Crea evento"}
           </Button>
         </DialogActions>
       </Dialog>

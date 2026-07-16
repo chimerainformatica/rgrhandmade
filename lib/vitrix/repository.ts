@@ -121,7 +121,7 @@ export async function getVitrixBootstrap(
       supabase
         .from("catalogue")
         .select(
-          "id,ref,title,description,category,img_path,img_position,lang,status,sort_order,item_type,parent_id,parure_id,created_at",
+          "id,translation_group_id,parent_translation_group_id,ref,title,description,category,img_path,img_position,lang,status,sort_order,item_type,parent_id,parure_id,created_at",
         )
         .order("sort_order"),
       supabase

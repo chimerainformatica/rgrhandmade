@@ -236,14 +236,6 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
-function LanguageFlag({ lang }: { lang: string }) {
-  return (
-    <Box sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32 }}>
-      {lang === "en" ? <UKFlag /> : <ItalianFlag />}
-    </Box>
-  );
-}
-
 const emptyForm = (defaultCategory = "") => ({
   ref: "",
   title: "",
@@ -294,6 +286,7 @@ export function SiteCataloguePanel() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [categoryDrafts, setCategoryDrafts] = useState<VitrixCatalogueCategoryRow[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryNameEn, setNewCategoryNameEn] = useState("");
   const [categoryBusyId, setCategoryBusyId] = useState<string | null>(null);
   const [categoryBusyAction, setCategoryBusyAction] = useState<CategoryBusyAction>(null);
 
@@ -313,6 +306,7 @@ export function SiteCataloguePanel() {
   const [selectedMediaUrl, setSelectedMediaUrl] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState<VitrixCatalogueRow | null>(null);
+  const [deleteScope, setDeleteScope] = useState<"group" | "variant">("group");
   const [deleting, setDeleting] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("compact");
   const formIsCollection = form.item_type === "collection";
@@ -325,7 +319,10 @@ export function SiteCataloguePanel() {
   const switchLanguage = (newLang: "it" | "en") => {
     if (newLang === form.lang) return;
     if (editing) {
-      const sibling = rows.find((c) => c.ref === editing.ref && c.lang === newLang);
+      const dirty = form.title !== editing.title || form.description !== (editing.description ?? "") ||
+        form.category !== editing.category || form.status !== editing.status || form.sort_order !== editing.sort_order;
+      if (dirty && !window.confirm("Hai modifiche non salvate. Cambiare lingua e scartarle?")) return;
+      const sibling = rows.find((c) => c.translation_group_id === editing.translation_group_id && c.lang === newLang);
       if (sibling) {
         setEditing(sibling);
         setForm({
@@ -340,6 +337,9 @@ export function SiteCataloguePanel() {
           sort_order: sibling.sort_order,
         });
         setFilePreview(sibling.img_path?.startsWith("http") ? sibling.img_path : "");
+        setSelectedCollectionItems(
+          rows.filter((item) => (item.parent_id ?? item.parure_id) === sibling.id).map((item) => item.id),
+        );
         return;
       }
     }
@@ -402,9 +402,18 @@ export function SiteCataloguePanel() {
     void refreshAll();
   }, [refreshAll]);
 
+  const logicalRows = Array.from(
+    rows.reduce((groups, row) => {
+      const key = row.translation_group_id || String(row.id);
+      const current = groups.get(key);
+      if (!current || (row.lang === "it" && current.lang !== "it")) groups.set(key, row);
+      return groups;
+    }, new Map<string, VitrixCatalogueRow>()),
+  ).map(([, row]) => row);
+
   useEffect(() => {
-    rowsRef.current = rows;
-  }, [rows]);
+    rowsRef.current = logicalRows;
+  }, [logicalRows]);
 
   useEffect(() => {
     if (loadingCategories) return;
@@ -417,7 +426,7 @@ export function SiteCataloguePanel() {
     }
   }, [categories, loadingCategories, selectedCategory]);
 
-  const totalItems = rows.length;
+  const totalItems = logicalRows.length;
   const publishedItems = rows.filter((row) => row.status === "published").length;
   const overviewIsDraft = publishedItems === 0 && totalItems > 0;
   const catalogueCreatedAt = rows
@@ -429,7 +438,7 @@ export function SiteCataloguePanel() {
     month: "long",
     year: "numeric",
   });
-  const filteredRows = rows.filter((row) => {
+  const filteredRows = logicalRows.filter((row) => {
     const q = search.trim().toLowerCase();
     const matchesSearch =
       !q ||
@@ -486,6 +495,28 @@ export function SiteCataloguePanel() {
     const itemsInCollection = rows.filter((item) => (item.parent_id ?? item.parure_id) === row.id).map((item) => item.id);
     setSelectedCollectionItems(itemsInCollection);
     setDialogOpen(true);
+  };
+
+  const openOrCreateTranslation = async (source: VitrixCatalogueRow, language: "it" | "en") => {
+    const existing = rows.find((item) => item.translation_group_id === source.translation_group_id && item.lang === language);
+    if (existing) {
+      openEdit(existing);
+      return;
+    }
+
+    const res = await fetch(`/api/vitrix/site-catalogue/${source.id}/translations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: language }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.catalogue) {
+      showToast("error", typeof json.error === "string" ? json.error : "Impossibile creare la traduzione");
+      return;
+    }
+    await fetchCatalogue();
+    showToast("success", `Variante ${language.toUpperCase()} creata in bozza`);
+    openEdit(json.catalogue as VitrixCatalogueRow);
   };
 
   const openCatalogueEdit = () => {
@@ -570,6 +601,7 @@ export function SiteCataloguePanel() {
   const openCategoryDialog = () => {
     setCategoryDrafts(categories.map((category) => ({ ...category })));
     setNewCategoryName("");
+    setNewCategoryNameEn("");
     setCategoryDialogOpen(true);
   };
 
@@ -585,7 +617,7 @@ export function SiteCataloguePanel() {
       const res = await fetch("/api/vitrix/site-catalogue/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, name_en: newCategoryNameEn.trim() || name }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -595,6 +627,7 @@ export function SiteCataloguePanel() {
 
       showToast("success", "Categoria creata");
       setNewCategoryName("");
+      setNewCategoryNameEn("");
       await refreshAll();
       if (dialogOpen && !form.category) {
         setForm((current) => ({ ...current, category: json.category?.name ?? name }));
@@ -614,7 +647,8 @@ export function SiteCataloguePanel() {
       showToast("error", "Il nome della categoria e obbligatorio");
       return;
     }
-    if (nextName === original.name) return;
+    const nextNameEn = draft.name_en?.trim().replace(/\s+/g, " ") || nextName;
+    if (nextName === original.name && nextNameEn === (original.name_en || original.name)) return;
 
     setCategoryBusyId(categoryId);
     setCategoryBusyAction("save");
@@ -622,7 +656,7 @@ export function SiteCataloguePanel() {
       const res = await fetch(`/api/vitrix/site-catalogue/categories/${categoryId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nextName }),
+        body: JSON.stringify({ name: nextName, name_en: nextNameEn }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -761,14 +795,16 @@ export function SiteCataloguePanel() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/vitrix/site-catalogue/${deleteTarget.id}`, { method: "DELETE" });
+      const scope = deleteScope === "group" ? "?scope=group" : "";
+      const res = await fetch(`/api/vitrix/site-catalogue/${deleteTarget.id}${scope}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) {
         showToast("error", json.error ?? "Errore eliminazione");
         return;
       }
-      showToast("success", "Collezione eliminata");
+      showToast("success", deleteScope === "group" ? "Elemento e traduzioni eliminati" : "Traduzione eliminata");
       setDeleteTarget(null);
+      if (deleteScope === "variant") setDialogOpen(false);
       await fetchCatalogue();
     } finally {
       setDeleting(false);
@@ -846,7 +882,11 @@ export function SiteCataloguePanel() {
     const [moved] = nextRows.splice(from, 1);
     nextRows.splice(to, 0, moved);
     rowsRef.current = nextRows;
-    setRows(nextRows);
+    const groupOrder = new Map(nextRows.map((row, index) => [row.translation_group_id, index]));
+    setRows((current) => [...current].sort((a, b) => {
+      const order = (groupOrder.get(a.translation_group_id) ?? 0) - (groupOrder.get(b.translation_group_id) ?? 0);
+      return order || a.lang.localeCompare(b.lang);
+    }));
   };
 
   const handleDragEnd = () => {
@@ -1393,7 +1433,38 @@ export function SiteCataloguePanel() {
                         <CategoryBadge category={row.category} />
                       </TableCell>
                       <TableCell align="center" sx={cellSx}>
-                        <LanguageFlag lang={row.lang} />
+                        <Stack component="div" direction="row" spacing={0.5} sx={{ justifyContent: "center" }}>
+                          {(["it", "en"] as const).map((language) => {
+                            const variant = rows.find((item) => item.translation_group_id === row.translation_group_id && item.lang === language);
+                            return (
+                              <Tooltip
+                                key={language}
+                                title={variant ? `${language.toUpperCase()} · ${variant.status === "published" ? "Pubblicato" : "Bozza"}` : `Crea ${language.toUpperCase()}`}
+                              >
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => void openOrCreateTranslation(row, language)}
+                                    aria-label={variant ? `Modifica variante ${language.toUpperCase()}` : `Variante ${language.toUpperCase()} mancante`}
+                                    sx={{
+                                      width: 32,
+                                      height: 28,
+                                      borderRadius: "8px",
+                                      border: `1px solid ${variant?.status === "published" ? "rgba(46,125,50,.35)" : "var(--vx-border)"}`,
+                                      opacity: variant ? 1 : 0.52,
+                                      bgcolor: variant?.status === "published" ? "rgba(46,125,50,.07)" : "transparent",
+                                    }}
+                                  >
+                                    <Box sx={{ position: "relative", display: "inline-flex" }}>
+                                      {language === "it" ? <ItalianFlag width={18} height={13} /> : <UKFlag width={18} height={13} />}
+                                      {!variant && <AddIcon sx={{ position: "absolute", right: -8, bottom: -8, fontSize: 12, color: "var(--vx-primary)" }} />}
+                                    </Box>
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            );
+                          })}
+                        </Stack>
                       </TableCell>
                       <TableCell sx={cellSx}>
                         <StatusBadge status={row.status} />
@@ -1444,7 +1515,7 @@ export function SiteCataloguePanel() {
                       <Tooltip title={row.status === "draft" ? "Rimuovi bozza" : "Elimina"}>
                             <IconButton
                               size="small"
-                              onClick={() => setDeleteTarget(row)}
+                              onClick={() => { setDeleteScope("group"); setDeleteTarget(row); }}
                               sx={{ color: "var(--vx-text-muted)", "&:hover": { color: "#d32f2f" } }}
                             >
                               <DeleteOutlineIcon sx={{ fontSize: 16 }} />
@@ -1846,6 +1917,17 @@ export function SiteCataloguePanel() {
               </Typography>
             )}
           </Box>
+          {editing && (
+            <Tooltip title={`Elimina solo la variante ${form.lang.toUpperCase()}`}>
+              <IconButton
+                onClick={() => { setDeleteScope("variant"); setDeleteTarget(editing); }}
+                aria-label={`Elimina variante ${form.lang.toUpperCase()}`}
+                sx={{ width: 36, height: 36, color: "var(--vx-danger, #d32f2f)" }}
+              >
+                <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
           <IconButton
             onClick={() => switchLanguage(form.lang === "it" ? "en" : "it")}
             sx={{
@@ -1867,6 +1949,14 @@ export function SiteCataloguePanel() {
             {/* Sinistra: form */}
             <Grid size={{ xs: 12, md: 7 }}>
               <Stack component="div" spacing={2}>
+                {editing && form.lang === "en" && (() => {
+                  const source = rows.find((item) => item.translation_group_id === editing.translation_group_id && item.lang === "it");
+                  return source ? (
+                    <Alert severity="info" icon={<InfoOutlinedIcon fontSize="small" />} sx={{ borderRadius: 2 }}>
+                      <strong>Sorgente IT:</strong> {source.title}{source.description ? ` — ${source.description}` : ""}
+                    </Alert>
+                  ) : null;
+                })()}
                 <TextField
                   select
                   label="Tipo"
@@ -2261,9 +2351,17 @@ export function SiteCataloguePanel() {
           <Stack component="div" spacing={2}>
             <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 1.5, alignItems: { md: "flex-end" } }}>
               <TextField
-                label="Nuova categoria"
+                label="Nuova categoria IT"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
+                size="small"
+                fullWidth
+                sx={fieldSx}
+              />
+              <TextField
+                label="Categoria EN"
+                value={newCategoryNameEn}
+                onChange={(e) => setNewCategoryNameEn(e.target.value)}
                 size="small"
                 fullWidth
                 sx={fieldSx}
@@ -2296,7 +2394,7 @@ export function SiteCataloguePanel() {
               <Stack component="div" spacing={1}>
                 {categoryDrafts.map((category, index) => {
                   const original = categories.find((item) => item.id === category.id);
-                  const changed = original ? original.name !== category.name.trim() : false;
+                  const changed = original ? original.name !== category.name.trim() || (original.name_en || original.name) !== (category.name_en?.trim() || category.name.trim()) : false;
                   return (
                     <Box
                       key={category.id}
@@ -2312,11 +2410,25 @@ export function SiteCataloguePanel() {
                       }}
                     >
                       <TextField
+                        label="Italiano"
                         value={category.name}
                         onChange={(e) => {
                           const value = e.target.value;
                           setCategoryDrafts((current) =>
                             current.map((item) => (item.id === category.id ? { ...item, name: value } : item)),
+                          );
+                        }}
+                        size="small"
+                        fullWidth
+                        sx={fieldSx}
+                      />
+                      <TextField
+                        label="English"
+                        value={category.name_en ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setCategoryDrafts((current) =>
+                            current.map((item) => (item.id === category.id ? { ...item, name_en: value } : item)),
                           );
                         }}
                         size="small"
@@ -2435,12 +2547,12 @@ export function SiteCataloguePanel() {
             <DeleteOutlineIcon sx={{ fontSize: 16, color: "#d32f2f" }} />
           </Box>
           <Typography sx={{ fontSize: 15, fontWeight: 700, color: "var(--vx-text-primary)" }}>
-            {deleteTarget?.status === "draft" ? "Rimuovi bozza" : "Elimina collezione"}
+            {deleteScope === "group" ? "Elimina elemento e traduzioni" : `Elimina variante ${deleteTarget?.lang.toUpperCase() ?? ""}`}
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ pt: "20px !important" }}>
           <Typography sx={{ fontSize: 14, color: "var(--vx-text-secondary)", lineHeight: 1.6 }}>
-            {deleteTarget?.status === "draft" ? "Sei sicuro di voler rimuovere la bozza " : "Sei sicuro di voler eliminare "}
+            {deleteScope === "group" ? "Verranno eliminate entrambe le lingue di " : "Verrà eliminata soltanto questa variante di "}
             <strong style={{ color: "var(--vx-text-primary)" }}>{deleteTarget?.title}</strong>?
             <br />
             L&apos;operazione non e reversibile.

@@ -46,42 +46,6 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-async function syncCatalogueAcrossLanguages(
-  supabase: ReturnType<typeof createAdminClient>,
-  params: {
-    ref: string;
-    lang: string;
-    title: string;
-    description: string | null;
-    category: string;
-    imgPath: string | null;
-    imgPosition: string | null;
-    status: string;
-    sortOrder: number;
-  },
-) {
-  const siblingLang = params.lang === "it" ? "en" : "it";
-  const { data: sibling } = await supabase
-    .from("catalogue")
-    .select("id")
-    .eq("ref", params.ref)
-    .eq("lang", siblingLang)
-    .maybeSingle();
-
-  if (sibling) {
-    const siblingUpdate: Record<string, string | number | null> = {
-      title: params.title,
-      description: params.description,
-      category: params.category,
-      status: params.status,
-      sort_order: params.sortOrder,
-    };
-    if (params.imgPath) siblingUpdate.img_path = params.imgPath;
-    if (params.imgPosition) siblingUpdate.img_position = params.imgPosition;
-    await supabase.from("catalogue").update(siblingUpdate).eq("id", sibling.id);
-  }
-}
-
 // POST /api/vitrix/site-catalogue
 export async function POST(req: NextRequest) {
   try {
@@ -183,24 +147,60 @@ export async function POST(req: NextRequest) {
       imgPath = imgUrl;
     }
 
-    const { data, error } = await supabase
+    let parentTranslationGroupId: string | null = null;
+    let siblingParentId: number | null = null;
+    if (itemType === "item" && parentId) {
+      const { data: parent } = await supabase
+        .from("catalogue")
+        .select("translation_group_id")
+        .eq("id", parentId)
+        .maybeSingle();
+      parentTranslationGroupId = parent?.translation_group_id ?? null;
+      if (parentTranslationGroupId) {
+        const { data: siblingParent } = await supabase
+          .from("catalogue")
+          .select("id")
+          .eq("translation_group_id", parentTranslationGroupId)
+          .eq("lang", lang === "it" ? "en" : "it")
+          .maybeSingle();
+        siblingParentId = siblingParent?.id ?? null;
+      }
+    }
+
+    const translationGroupId = crypto.randomUUID();
+    const shared = {
+      ref,
+      category: resolvedCategory.name,
+      img_path: imgPath,
+      img_position: imgPosition || null,
+      sort_order: nextSortOrder,
+      item_type: itemType,
+      translation_group_id: translationGroupId,
+      parent_translation_group_id: parentTranslationGroupId,
+    };
+    const { data: createdRows, error } = await supabase
       .from("catalogue")
-      .insert({
-        ref,
-        title,
-        description: description || null,
-        category: resolvedCategory.name,
-        img_path: imgPath,
-        img_position: imgPosition || null,
-        lang,
-        status,
-        sort_order: nextSortOrder,
-        item_type: itemType,
-        parent_id: itemType === "item" ? parentId : null,
-        parure_id: itemType === "item" ? parentId : null,
-      })
-      .select()
-      .single();
+      .insert([
+        {
+          ...shared,
+          title,
+          description: description || null,
+          lang,
+          status,
+          parent_id: itemType === "item" ? parentId : null,
+          parure_id: itemType === "item" ? parentId : null,
+        },
+        {
+          ...shared,
+          title,
+          description: description || null,
+          lang: lang === "it" ? "en" : "it",
+          status: "draft",
+          parent_id: itemType === "item" ? siblingParentId : null,
+          parure_id: itemType === "item" ? siblingParentId : null,
+        },
+      ])
+      .select();
 
     if (error) {
       console.error("site-catalogue INSERT error:", error);
@@ -211,33 +211,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (data) {
-      await syncCatalogueAcrossLanguages(supabase, {
-        ref,
-        lang,
-        title,
-        description: description || null,
-        category: resolvedCategory.name,
-        imgPath,
-        imgPosition: imgPosition || null,
-        status,
-        sortOrder: nextSortOrder!,
-      });
-    }
+    const rows = (createdRows ?? []) as VitrixCatalogueRow[];
+    const data = rows.find((row) => row.lang === lang) ?? rows[0];
 
     if (data && itemType === "collection" && collectionItems.length > 0) {
-      const updatePromises = collectionItems.map((itemId: number) =>
+      const { data: selectedItems } = await supabase
+        .from("catalogue")
+        .select("translation_group_id")
+        .in("id", collectionItems);
+      const childGroups = Array.from(new Set((selectedItems ?? []).map((item) => item.translation_group_id)));
+      await Promise.all(rows.flatMap((parent) => childGroups.map((groupId) =>
         supabase
           .from("catalogue")
-          .update({ parent_id: data.id, parure_id: data.id, item_type: "item" })
-          .eq("id", itemId)
-      );
-      await Promise.all(updatePromises);
+          .update({
+            parent_id: parent.id,
+            parure_id: parent.id,
+            parent_translation_group_id: translationGroupId,
+            item_type: "item",
+          })
+          .eq("translation_group_id", groupId)
+          .eq("lang", parent.lang)
+      )));
     }
 
     return NextResponse.json({
       success: true,
       catalogue: data as VitrixCatalogueRow,
+      translations: rows,
     });
   } catch (err) {
     console.error("POST /api/vitrix/site-catalogue error:", err);

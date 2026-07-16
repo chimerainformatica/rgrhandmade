@@ -41,7 +41,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { EventCategoryRow } from "@/lib/vitrix/event-categories";
-import type { VtxEventRow } from "@/lib/vitrix/types";
+import type { VtxEventLanguage, VtxEventRow, VtxEventTranslationGroup } from "@/lib/vitrix/types";
 import { getCoverImageUrl, getThumbnailImageUrl } from "@/lib/vitrix/image";
 import { autocompletePaperSx, fieldSx, iconBtnSx, selectSx } from "@/lib/admin-theme";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -54,11 +54,13 @@ type StatusFilter = "all" | "published" | "draft" | "featured";
 type BulkAction = "" | "publish" | "draft" | "feature" | "unfeature" | "delete";
 type SortKey = "title" | "event" | "status" | "type";
 type SortDir = "asc" | "desc";
+type LanguageCoverage = "all" | "complete" | "missing_it" | "missing_en";
 
 type QuickEditValues = {
   title: string;
   slug: string;
   event_date: string;
+  publication_date: string;
   event_start_at: string;
   category: string;
   tags: string;
@@ -82,6 +84,7 @@ const EMPTY_FORM: EventFormValues = {
   category: "",
   venue: "",
   event_date: "",
+  publication_date: "",
   event_start_at: "",
   event_end_at: "",
   lang: "it",
@@ -216,6 +219,7 @@ function rowToForm(row: VtxEventRow): EventFormValues {
     category: row.category ?? "",
     venue: row.venue ?? "",
     event_date: row.event_date_label ?? row.event_date ?? "",
+    publication_date: row.publication_date?.slice(0, 7) ?? "",
     event_start_at: row.event_start_at ? row.event_start_at.slice(0, 16) : "",
     event_end_at: row.event_end_at ? row.event_end_at.slice(0, 16) : "",
     lang: row.lang,
@@ -245,6 +249,7 @@ function rowToQuickEdit(row: VtxEventRow): QuickEditValues {
     title: row.title,
     slug: row.slug ?? "",
     event_date: row.event_date_label ?? row.event_date ?? "",
+    publication_date: row.publication_date?.slice(0, 7) ?? "",
     event_start_at: row.event_start_at ? row.event_start_at.slice(0, 16) : "",
     category: row.category ?? "",
     tags: row.tags?.join(", ") ?? "",
@@ -260,6 +265,7 @@ function formToPayload(form: EventFormValues) {
     ...form,
     event_date: form.event_date || null,
     event_date_label: form.event_date || null,
+    publication_date: form.publication_date ? `${form.publication_date}-01` : null,
     category: form.category || null,
     venue: form.venue || null,
     description: form.description || null,
@@ -290,6 +296,61 @@ function includesText(value: string | null | undefined, query: string) {
   return (value ?? "").toLowerCase().includes(query);
 }
 
+function formatPublicationMonth(value: string | null | undefined, locale = "it-IT") {
+  if (!value) return "-";
+  const date = new Date(`${value.slice(0, 7)}-01T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date);
+}
+
+function LanguageFlagButton({ lang, item, source, onOpen, onCreate }: {
+  lang: VtxEventLanguage;
+  item: VtxEventRow | null;
+  source: VtxEventRow;
+  onOpen: (item: VtxEventRow) => void;
+  onCreate: (source: VtxEventRow, lang: VtxEventLanguage) => void;
+}) {
+  const label = lang === "it" ? "Italiano" : "English";
+  return (
+    <Tooltip title={item ? `${label}: ${item.status === "published" ? "pubblicato" : "bozza"}` : `Crea traduzione ${label}`} arrow>
+      <Box
+        component="button"
+        type="button"
+        aria-label={item ? `Modifica versione ${label}` : `Crea traduzione ${label}`}
+        onClick={() => item ? onOpen(item) : onCreate(source, lang)}
+        sx={{ position: "relative", display: "inline-flex", p: 0, border: 0, bgcolor: "transparent", cursor: "pointer", opacity: item ? 1 : 0.42, transition: "opacity 160ms ease, transform 160ms ease", "&:hover": { opacity: 1, transform: "translateY(-1px)" }, "&:focus-visible": { outline: "2px solid var(--vx-primary)", outlineOffset: 2, borderRadius: "6px" } }}
+      >
+        {lang === "it" ? <ItalianFlag width={18} height={13} /> : <UKFlag width={18} height={13} />}
+        {item ? (
+          <Box component="span" sx={{ position: "absolute", right: -2, bottom: -2, width: 7, height: 7, borderRadius: "50%", bgcolor: item.status === "published" ? "#2e9a49" : "#d68b1f", border: "1.5px solid var(--vx-surface)" }} />
+        ) : (
+          <Box component="span" sx={{ position: "absolute", right: -4, bottom: -4, width: 12, height: 12, borderRadius: "50%", bgcolor: "var(--vx-primary)", color: "#fff", display: "grid", placeItems: "center", fontSize: 10, lineHeight: 1, fontWeight: 800 }}>+</Box>
+        )}
+      </Box>
+    </Tooltip>
+  );
+}
+
+function groupEventTranslations(items: VtxEventRow[]): VtxEventTranslationGroup[] {
+  const groups = new Map<string, { it: VtxEventRow | null; en: VtxEventRow | null }>();
+  items.forEach((item) => {
+    const id = item.translation_group_id || `legacy-${item.id}`;
+    const group = groups.get(id) ?? { it: null, en: null };
+    if (item.lang === "en") group.en = item;
+    else group.it = item;
+    groups.set(id, group);
+  });
+  return Array.from(groups, ([id, variants]) => {
+    const primary = variants.it ?? variants.en!;
+    return {
+      id,
+      primary,
+      ...variants,
+      missingLanguages: (["it", "en"] as VtxEventLanguage[]).filter((lang) => !variants[lang]),
+    };
+  });
+}
+
 export function EventsPanel() {
   const [items, setItems] = useState<VtxEventRow[]>([]);
   const [categories, setCategories] = useState<EventCategoryRow[]>([]);
@@ -297,7 +358,7 @@ export function EventsPanel() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<"all" | EventType>("all");
-  const [langFilter, setLangFilter] = useState("all");
+  const [langFilter, setLangFilter] = useState<LanguageCoverage>("all");
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -311,6 +372,7 @@ export function EventsPanel() {
   const [toast, setToast] = useState<ToastState>({ open: false, message: "", severity: "success" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<VtxEventRow | null>(null);
+  const [translationSource, setTranslationSource] = useState<VtxEventRow | null>(null);
   const [form, setForm] = useState<EventFormValues>(EMPTY_FORM);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -318,6 +380,7 @@ export function EventsPanel() {
   const [saving, setSaving] = useState(false);
   const [createMenuAnchor, setCreateMenuAnchor] = useState<HTMLElement | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VtxEventRow | null>(null);
+  const [deleteScope, setDeleteScope] = useState<"variant" | "group">("group");
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
@@ -361,46 +424,48 @@ export function EventsPanel() {
     return () => abortRef.current?.abort();
   }, [fetchItems]);
 
+  const groups = useMemo(() => groupEventTranslations(items), [items]);
+
   const counts = useMemo(() => ({
-    all: items.length,
-    published: items.filter((item) => item.status === "published").length,
-    draft: items.filter((item) => item.status === "draft").length,
-    featured: items.filter((item) => item.is_featured).length,
-  }), [items]);
+    all: groups.length,
+    published: groups.filter((group) => [group.it, group.en].some((item) => item?.status === "published")).length,
+    draft: groups.filter((group) => [group.it, group.en].some((item) => item?.status === "draft")).length,
+    featured: groups.filter((group) => group.primary.is_featured).length,
+  }), [groups]);
 
   const displayed = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = items.filter((item) => {
-      if (statusFilter === "published" && item.status !== "published") return false;
-      if (statusFilter === "draft" && item.status !== "draft") return false;
+    const filtered = groups.filter((group) => {
+      const variants = [group.it, group.en].filter((item): item is VtxEventRow => Boolean(item));
+      const item = group.primary;
+      if (statusFilter === "published" && !variants.some((variant) => variant.status === "published")) return false;
+      if (statusFilter === "draft" && !variants.some((variant) => variant.status === "draft")) return false;
       if (statusFilter === "featured" && !item.is_featured) return false;
       if (typeFilter !== "all" && item.type !== typeFilter) return false;
-      if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
-      if (langFilter !== "all" && item.lang !== langFilter) return false;
+      if (categoryFilter !== "all" && !variants.some((variant) => variant.category === categoryFilter)) return false;
+      if (langFilter === "complete" && (!group.it || !group.en)) return false;
+      if (langFilter === "missing_it" && group.it) return false;
+      if (langFilter === "missing_en" && group.en) return false;
       if (!q) return true;
-      return (
-        includesText(item.title, q) ||
-        includesText(item.slug, q) ||
-        includesText(item.category, q) ||
-        includesText(item.venue, q) ||
-        includesText(item.tags?.join(" "), q)
-      );
+      return variants.some((variant) => includesText(variant.title, q) || includesText(variant.slug, q) || includesText(variant.category, q) || includesText(variant.venue, q) || includesText(variant.tags?.join(" "), q));
     });
 
     return [...filtered].sort((a, b) => {
+      const aItem = a.primary;
+      const bItem = b.primary;
       const dir = sortDir === "asc" ? 1 : -1;
-      if (sortKey === "title") return a.title.localeCompare(b.title) * dir;
-      if (sortKey === "status") return a.status.localeCompare(b.status) * dir;
-      if (sortKey === "type") return a.type.localeCompare(b.type) * dir;
-      const aDate = Date.parse(a.event_start_at ?? a.event_date ?? "") || 0;
-      const bDate = Date.parse(b.event_start_at ?? b.event_date ?? "") || 0;
+      if (sortKey === "title") return aItem.title.localeCompare(bItem.title) * dir;
+      if (sortKey === "status") return aItem.status.localeCompare(bItem.status) * dir;
+      if (sortKey === "type") return aItem.type.localeCompare(bItem.type) * dir;
+      const aDate = Date.parse(aItem.type === "publication" ? aItem.publication_date ?? "" : aItem.event_start_at ?? aItem.event_date ?? "") || 0;
+      const bDate = Date.parse(bItem.type === "publication" ? bItem.publication_date ?? "" : bItem.event_start_at ?? bItem.event_date ?? "") || 0;
       return (aDate - bDate) * dir;
     });
-  }, [categoryFilter, items, langFilter, search, sortDir, sortKey, statusFilter, typeFilter]);
+  }, [categoryFilter, groups, langFilter, search, sortDir, sortKey, statusFilter, typeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(displayed.length / rowsPerPage));
   const pageItems = displayed.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  const visibleIds = pageItems.map((item) => item.id);
+  const visibleIds = pageItems.flatMap((group) => [group.it?.id, group.en?.id].filter((id): id is number => Boolean(id)));
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
 
   useEffect(() => {
@@ -416,10 +481,6 @@ export function EventsPanel() {
     setSortDir(nextKey === "event" ? "desc" : "asc");
   }
 
-  function toggleSelected(id: number) {
-    setSelectedIds((prev) => prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]);
-  }
-
   function toggleAllVisible() {
     setSelectedIds((prev) => {
       if (allVisibleSelected) return prev.filter((id) => !visibleIds.includes(id));
@@ -430,6 +491,7 @@ export function EventsPanel() {
   function openCreate(type: "event" | "publication") {
     setCreateMenuAnchor(null);
     setEditingItem(null);
+    setTranslationSource(null);
     setForm({
       ...EMPTY_FORM,
       type,
@@ -441,7 +503,42 @@ export function EventsPanel() {
 
   function openEdit(item: VtxEventRow) {
     setEditingItem(item);
+    setTranslationSource(null);
     setForm(rowToForm(item));
+    setMainImageFile(null);
+    setDialogOpen(true);
+  }
+
+  function toggleGroupSelected(group: VtxEventTranslationGroup) {
+    const ids = [group.it?.id, group.en?.id].filter((id): id is number => Boolean(id));
+    setSelectedIds((prev) => ids.every((id) => prev.includes(id))
+      ? prev.filter((id) => !ids.includes(id))
+      : Array.from(new Set([...prev, ...ids])));
+  }
+
+  function openTranslation(source: VtxEventRow, lang: VtxEventLanguage) {
+    const sourceForm = rowToForm(source);
+    setEditingItem(null);
+    setTranslationSource(source);
+    setForm({
+      ...sourceForm,
+      title: "",
+      slug: "",
+      excerpt: "",
+      category: source.type === "publication" ? "Pubblicazioni" : "",
+      venue: "",
+      event_date: source.type === "publication" ? sourceForm.event_date : "",
+      lang,
+      status: "draft",
+      description: "",
+      content: "",
+      tags: "",
+      image_alt: "",
+      cta_label: "",
+      seo_title: "",
+      seo_description: "",
+      canonical_url: "",
+    });
     setMainImageFile(null);
     setDialogOpen(true);
   }
@@ -449,6 +546,7 @@ export function EventsPanel() {
   function closeDialog() {
     setDialogOpen(false);
     setEditingItem(null);
+    setTranslationSource(null);
     setMainImageFile(null);
   }
 
@@ -478,7 +576,12 @@ export function EventsPanel() {
       const categoryName = nextForm.type === "publication" ? "Pubblicazioni" : await ensureCategory(nextForm.category);
       const finalForm = { ...nextForm, category: categoryName };
       const isEdit = Boolean(editingItem);
-      const url = isEdit ? `/api/vitrix/events/${editingItem!.id}` : "/api/vitrix/events";
+      const isTranslation = Boolean(translationSource);
+      const url = isEdit
+        ? `/api/vitrix/events/${editingItem!.id}`
+        : isTranslation
+          ? `/api/vitrix/events/${translationSource!.id}/translations`
+          : "/api/vitrix/events";
       const method = isEdit ? "PATCH" : "POST";
       const body = formToPayload(finalForm);
       const requestInit: RequestInit = { method };
@@ -498,7 +601,7 @@ export function EventsPanel() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       const contentLabel = finalForm.type === "publication" ? "Pubblicazione" : "Evento";
-      showToast(isEdit ? `${contentLabel} aggiornato.` : `${contentLabel} creato.`);
+      showToast(isEdit ? `${contentLabel} aggiornato.` : isTranslation ? `Traduzione ${finalForm.lang.toUpperCase()} creata.` : `${contentLabel} creato.`);
       closeDialog();
       fetchItems();
     } catch (err: unknown) {
@@ -520,6 +623,10 @@ export function EventsPanel() {
       showToast("Il numero o l'edizione e obbligatorio.", "error");
       return;
     }
+    if (quickEdit.type === "publication" && !quickEdit.publication_date) {
+      showToast("Il mese e anno di pubblicazione sono obbligatori.", "error");
+      return;
+    }
     quickSaveInFlightRef.current = true;
     setQuickSaving(true);
     try {
@@ -532,6 +639,7 @@ export function EventsPanel() {
           slug: quickEdit.slug || null,
           event_date: quickEdit.event_date || null,
           event_date_label: quickEdit.event_date || null,
+          publication_date: quickEdit.publication_date ? `${quickEdit.publication_date}-01` : null,
           event_start_at: quickEdit.event_start_at || null,
           category: categoryName || null,
           tags: quickEdit.tags,
@@ -695,10 +803,10 @@ export function EventsPanel() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/vitrix/events/${deleteTarget.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/vitrix/events/${deleteTarget.id}?scope=${deleteScope}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      showToast("Evento eliminato.");
+      showToast(deleteScope === "group" ? "Contenuto e traduzioni eliminati." : `Versione ${deleteTarget.lang.toUpperCase()} eliminata.`);
       setDeleteTarget(null);
       fetchItems();
     } catch (err: unknown) {
@@ -820,10 +928,11 @@ export function EventsPanel() {
                 <MenuItem key={category.id} value={category.name}>{category.name} ({category.item_count ?? 0})</MenuItem>
               ))}
             </Select>
-            <Select size="small" value={langFilter} onChange={(e) => setLangFilter(e.target.value)} sx={selectSx}>
-              <MenuItem value="all">Tutte le lingue</MenuItem>
-              <MenuItem value="it">IT</MenuItem>
-              <MenuItem value="en">EN</MenuItem>
+            <Select size="small" value={langFilter} onChange={(e) => setLangFilter(e.target.value as LanguageCoverage)} sx={{ ...selectSx, minWidth: 172 }}>
+              <MenuItem value="all">Copertura lingue</MenuItem>
+              <MenuItem value="complete">IT + EN complete</MenuItem>
+              <MenuItem value="missing_en">Manca inglese</MenuItem>
+              <MenuItem value="missing_it">Manca italiano</MenuItem>
             </Select>
             <Button startIcon={<FilterListOutlinedIcon />} variant="outlined" onClick={resetFilters} sx={{ textTransform: "none", borderRadius: "8px", borderColor: "var(--vx-border)" }}>
               Reset
@@ -888,11 +997,14 @@ export function EventsPanel() {
               </Box>
             </Box>
             <Box component="tbody">
-              {pageItems.map((item, idx) => (
-                <Fragment key={item.id}>
-                  <Box key={item.id} component="tr" sx={{ borderBottom: quickEditId === item.id ? "none" : "1px solid var(--vx-border)", bgcolor: item.type === "publication" ? "rgba(184,146,84,0.055)" : "transparent", boxShadow: item.type === "publication" ? "inset 3px 0 #B89254" : "none", "&:hover": { bgcolor: item.type === "publication" ? "rgba(184,146,84,0.11)" : "var(--vx-surface-muted)" } }}>
+              {pageItems.map((group, idx) => {
+                const item = group.primary;
+                const groupIds = [group.it?.id, group.en?.id].filter((id): id is number => Boolean(id));
+                return (
+                <Fragment key={group.id}>
+                  <Box key={item.id} component="tr" sx={{ borderBottom: groupIds.includes(quickEditId ?? -1) ? "none" : "1px solid var(--vx-border)", bgcolor: item.type === "publication" ? "rgba(184,146,84,0.055)" : "transparent", boxShadow: item.type === "publication" ? "inset 3px 0 #B89254" : "none", "&:hover": { bgcolor: item.type === "publication" ? "rgba(184,146,84,0.11)" : "var(--vx-surface-muted)" } }}>
                     <Box component="td" sx={{ px: 1.25, py: 1.5 }}>
-                      <Checkbox size="small" checked={selectedIds.includes(item.id)} onChange={() => toggleSelected(item.id)} />
+                      <Checkbox size="small" checked={groupIds.every((id) => selectedIds.includes(id))} onChange={() => toggleGroupSelected(group)} />
                     </Box>
                     <Box component="td" sx={{ px: 2, py: 1.5, minWidth: 320 }}>
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
@@ -909,7 +1021,7 @@ export function EventsPanel() {
                             <Typography sx={{ color: "var(--vx-text-disabled)", fontSize: 12 }}>|</Typography>
                             <Button size="small" onClick={() => openEdit(item)} sx={{ minWidth: 0, p: 0, textTransform: "none", fontSize: 12 }}>Modifica completa</Button>
                             <Typography sx={{ color: "var(--vx-text-disabled)", fontSize: 12 }}>|</Typography>
-                            <Button size="small" onClick={() => setDeleteTarget(item)} sx={{ minWidth: 0, p: 0, textTransform: "none", fontSize: 12, color: "var(--vx-danger, #c62828)" }}>Elimina</Button>
+                            <Button size="small" onClick={() => { setDeleteScope("group"); setDeleteTarget(item); }} sx={{ minWidth: 0, p: 0, textTransform: "none", fontSize: 12, color: "var(--vx-danger, #c62828)" }}>Elimina</Button>
                           </Stack>
                         </Box>
                       </Stack>
@@ -919,7 +1031,7 @@ export function EventsPanel() {
                     <Box component="td" sx={{ px: 2, py: 1.5 }}>
                       <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
                         {item.type === "publication" ? <Chip label="Edizione" size="small" sx={{ height: 20, fontSize: 9.5, bgcolor: "rgba(184,146,84,0.14)", color: "#9A6F2E" }} /> : <EventOutlinedIcon sx={{ fontSize: 14, color: "var(--vx-text-muted)" }} />}
-                        <Typography sx={{ fontSize: 12.5, color: "var(--vx-text-secondary)" }}>{item.event_date_label || formatDate(item.event_start_at || item.event_date)}</Typography>
+                        <Typography sx={{ fontSize: 12.5, color: "var(--vx-text-secondary)", textTransform: item.type === "publication" ? "capitalize" : "none" }}>{item.type === "publication" ? formatPublicationMonth(item.publication_date) : item.event_date_label || formatDate(item.event_start_at || item.event_date)}</Typography>
                       </Stack>
                     </Box>
                     <Box component="td" sx={{ px: 2, py: 1.5 }}><Typography sx={{ fontSize: 13, color: "var(--vx-text-secondary)" }}>{item.venue || "-"}</Typography></Box>
@@ -931,33 +1043,43 @@ export function EventsPanel() {
                     </Box>
                     <Box component="td" sx={{ px: 2, py: 1.5 }}>
                       <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-                        <Box sx={{ opacity: item.lang === "it" ? 1 : 0.3 }}><ItalianFlag width={18} height={13} /></Box>
-                        <Box sx={{ opacity: item.lang === "en" ? 1 : 0.3 }}><UKFlag width={18} height={13} /></Box>
+                        <LanguageFlagButton lang="it" item={group.it} source={item} onOpen={openEdit} onCreate={openTranslation} />
+                        <LanguageFlagButton lang="en" item={group.en} source={item} onOpen={openEdit} onCreate={openTranslation} />
                       </Stack>
                     </Box>
                     <Box component="td" sx={{ px: 1.5, py: 1.5 }}>
                       <Stack direction="row" spacing={0.5}>
                         <Tooltip title="Modifica completa" arrow><IconButton size="small" onClick={() => openEdit(item)} sx={iconBtnSx("primary")}><EditOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-                        <Tooltip title="Elimina" arrow><IconButton size="small" onClick={() => setDeleteTarget(item)} sx={iconBtnSx("danger")}><DeleteOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+                        <Tooltip title="Elimina contenuto e traduzioni" arrow><IconButton size="small" onClick={() => { setDeleteScope("group"); setDeleteTarget(item); }} sx={iconBtnSx("danger")}><DeleteOutlinedIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
                       </Stack>
                     </Box>
                   </Box>
-                  {quickEditId === item.id && quickEdit && (
+                  {groupIds.includes(quickEditId ?? -1) && quickEdit && (
                     <Box key={`${item.id}-quick`} component="tr" sx={{ borderBottom: idx < pageItems.length - 1 ? "1px solid var(--vx-border)" : "none" }}>
                       <Box component="td" colSpan={9} sx={{ p: 0, bgcolor: item.type === "publication" ? "rgba(184,146,84,0.08)" : "rgba(247,249,252,0.82)" }}>
                         <Box sx={{ p: 2.5, borderTop: "1px solid var(--vx-border)" }}>
-                          <Typography sx={{ mb: 2, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--vx-text-muted)" }}>Modifica rapida</Typography>
+                          <Stack direction="row" spacing={1.5} sx={{ mb: 2, alignItems: "center", justifyContent: "space-between" }}>
+                            <Box>
+                              <Typography sx={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--vx-text-muted)" }}>Modifica rapida · {items.find((variant) => variant.id === quickEditId)?.lang.toUpperCase()}</Typography>
+                              <Typography sx={{ mt: 0.35, fontSize: 11.5, color: "var(--vx-text-muted)" }}>I campi strutturali vengono sincronizzati tra IT e EN.</Typography>
+                            </Box>
+                            <Stack direction="row" spacing={0.75}>
+                              <LanguageFlagButton lang="it" item={group.it} source={item} onOpen={openQuickEdit} onCreate={openTranslation} />
+                              <LanguageFlagButton lang="en" item={group.en} source={item} onOpen={openQuickEdit} onCreate={openTranslation} />
+                            </Stack>
+                          </Stack>
                           <Stack spacing={2}>
-                            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: quickEdit.type === "publication" ? "1fr" : "minmax(0, 1.2fr) minmax(220px, .8fr)" }, gap: 1.5 }}>
                               <TextField label="Titolo" value={quickEdit.title} onChange={(e) => setQuickEdit((p) => p && ({ ...p, title: e.target.value }))} fullWidth sx={fieldSx} />
                               {quickEdit.type !== "publication" && <TextField label="Slug" value={quickEdit.slug} onChange={(e) => setQuickEdit((p) => p && ({ ...p, slug: e.target.value }))} fullWidth sx={fieldSx} />}
-                            </Stack>
-                            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                            </Box>
+                            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: quickEdit.type === "publication" ? "minmax(180px, .65fr) minmax(0, 1fr) 130px" : "minmax(0, 1fr) minmax(220px, .75fr) 130px" }, gap: 1.5 }}>
+                              {quickEdit.type === "publication" && <TextField label="Mese / anno" type="month" value={quickEdit.publication_date} onChange={(e) => setQuickEdit((p) => p && ({ ...p, publication_date: e.target.value }))} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />}
                               <TextField label={quickEdit.type === "publication" ? "Numero / edizione" : "Data label"} value={quickEdit.event_date} onChange={(e) => setQuickEdit((p) => p && ({ ...p, event_date: e.target.value }))} fullWidth sx={fieldSx} />
                               {quickEdit.type !== "publication" && <TextField label="Inizio evento" type="datetime-local" value={quickEdit.event_start_at} onChange={(e) => setQuickEdit((p) => p && ({ ...p, event_start_at: e.target.value }))} fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={fieldSx} />}
                               <TextField label="Ordinamento" type="number" value={quickEdit.sort_order} onChange={(e) => setQuickEdit((p) => p && ({ ...p, sort_order: Number(e.target.value) }))} sx={fieldSx} />
-                            </Stack>
-                            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                            </Box>
+                            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: quickEdit.type === "publication" ? "minmax(220px, .7fr) 180px" : "minmax(180px, .65fr) minmax(240px, 1fr) minmax(220px, 1fr) 180px" }, gap: 1.5, alignItems: "start" }}>
                               <TextField select label="Tipo" value={quickEdit.type} onChange={(e) => updateQuickType(e.target.value as EventType)} fullWidth sx={fieldSx}>
                                 <MenuItem value="event">Evento</MenuItem>
                                 <MenuItem value="fiera">Fiera</MenuItem>
@@ -982,12 +1104,12 @@ export function EventsPanel() {
                                 )}
                               />}
                               {quickEdit.type !== "publication" && <TextField label="Tag" value={quickEdit.tags} onChange={(e) => setQuickEdit((p) => p && ({ ...p, tags: e.target.value }))} fullWidth sx={fieldSx} />}
-                              <TextField select label="Stato" value={quickEdit.status} onChange={(e) => setQuickEdit((p) => p && ({ ...p, status: e.target.value as "draft" | "published" }))} sx={fieldSx}>
+                              <TextField select label="Stato" value={quickEdit.status} onChange={(e) => setQuickEdit((p) => p && ({ ...p, status: e.target.value as "draft" | "published" }))} fullWidth sx={fieldSx}>
                                 <MenuItem value="draft">Bozza</MenuItem>
                                 <MenuItem value="published">Pubblicato</MenuItem>
                               </TextField>
-                            </Stack>
-                            <Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                            </Box>
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ pt: 1.5, borderTop: "1px solid var(--vx-border)", alignItems: { sm: "center" }, justifyContent: "space-between" }}>
                               <FormControlLabel control={<Switch checked={quickEdit.is_featured} onChange={(e) => setQuickEdit((p) => p && ({ ...p, is_featured: e.target.checked }))} />} label={quickEdit.type === "publication" ? "Metti questa pubblicazione in evidenza" : "Metti questo evento in evidenza"} />
                               <Stack direction="row" spacing={1}>
                                 <Button variant="contained" disabled={quickSaving} onClick={handleQuickSave} sx={{ textTransform: "none", borderRadius: "8px" }}>{quickSaving ? "Aggiorno..." : "Aggiorna"}</Button>
@@ -1000,7 +1122,8 @@ export function EventsPanel() {
                     </Box>
                   )}
                 </Fragment>
-              ))}
+                );
+              })}
             </Box>
           </Box>
         )}
@@ -1008,7 +1131,7 @@ export function EventsPanel() {
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 1.5, alignItems: { sm: "center" }, justifyContent: "space-between" }}>
         <Typography sx={{ fontSize: 12, color: "var(--vx-text-muted)" }}>
-          Mostra {pageItems.length} di {displayed.length} elementi filtrati su {items.length} totali.
+          Mostra {pageItems.length} di {displayed.length} contenuti filtrati su {groups.length} totali.
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Typography sx={{ fontSize: 12, color: "var(--vx-text-muted)" }}>Elementi per pagina</Typography>
@@ -1031,22 +1154,22 @@ export function EventsPanel() {
 
       <EditEventDialog
         open={dialogOpen}
-        mode={editingItem ? "edit" : "create"}
+        mode={editingItem ? "edit" : translationSource ? "translate" : "create"}
         event={editingItem}
+        sourceEvent={translationSource}
         value={form}
         categories={categories}
         imageFile={mainImageFile}
         saving={saving}
-        onChange={setForm}
         onImageFileChange={setMainImageFile}
         onClose={closeDialog}
         onSave={handleSave}
-        onDelete={setDeleteTarget}
+        onDelete={(event) => { closeDialog(); setDeleteScope("variant"); setDeleteTarget(event); }}
       />
 
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { bgcolor: "var(--vx-surface)", color: "var(--vx-text-primary)", borderRadius: "14px", border: "1px solid var(--vx-border)", boxShadow: "0 24px 64px rgba(0,0,0,0.22)" } } }}>
-        <DialogTitle sx={{ px: 3, pt: 3, pb: 1, fontSize: 17, fontWeight: 700 }}>Elimina evento</DialogTitle>
-        <DialogContent sx={{ px: 3 }}><Typography sx={{ fontSize: 14, color: "var(--vx-text-secondary)" }}>Sei sicuro di voler eliminare <Box component="strong" sx={{ color: "var(--vx-text-primary)" }}>&quot;{deleteTarget?.title}&quot;</Box>? L&apos;operazione e irreversibile.</Typography></DialogContent>
+        <DialogTitle sx={{ px: 3, pt: 3, pb: 1, fontSize: 17, fontWeight: 700 }}>{deleteScope === "group" ? "Elimina contenuto" : `Elimina versione ${deleteTarget?.lang.toUpperCase()}`}</DialogTitle>
+        <DialogContent sx={{ px: 3 }}><Typography sx={{ fontSize: 14, color: "var(--vx-text-secondary)" }}>Sei sicuro di voler eliminare <Box component="strong" sx={{ color: "var(--vx-text-primary)" }}>&quot;{deleteTarget?.title}&quot;</Box>{deleteScope === "group" ? " e tutte le sue traduzioni" : " solo in questa lingua"}? L&apos;operazione è irreversibile.</Typography></DialogContent>
         <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
           <Button onClick={() => setDeleteTarget(null)} variant="outlined" sx={{ textTransform: "none", fontSize: 13, borderRadius: "8px", borderColor: "var(--vx-border)", color: "var(--vx-text-secondary)" }}>Annulla</Button>
           <Button onClick={handleDelete} disabled={deleting} variant="contained" color="error" startIcon={deleting ? <CircularProgress size={14} color="inherit" /> : <DeleteOutlinedIcon />} sx={{ textTransform: "none", fontSize: 13, fontWeight: 700, borderRadius: "8px", boxShadow: "none" }}>{deleting ? "Eliminazione..." : "Elimina"}</Button>

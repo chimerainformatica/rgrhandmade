@@ -111,7 +111,8 @@ function shouldShowDescription(card: CollectionRow): boolean {
   return Boolean(description) && description !== title;
 }
 
-function itemCategoryLabel(category: string, lang: Lang): string {
+function itemCategoryLabel(category: string, lang: Lang, localizedLabel?: string): string {
+  if (localizedLabel?.trim() && localizedLabel !== category) return singularizeLabel(localizedLabel);
   if (lang === "en") {
     const en = CATEGORY_LABELS[category]?.en ?? category;
     if (en === "Bracelets") return "Bracelet";
@@ -492,7 +493,7 @@ function CollectionDetailModal({
                   onClick={() => onOpenItem(item)}
                   className="group relative flex flex-col overflow-hidden bg-[#f6efe5] text-left"
                   style={{ border: "1px solid #d8c8b4" }}
-                  aria-label={(lang === "it" ? "Anteprima " : "Preview ") + itemCategoryLabel(item.category, lang)}
+                  aria-label={(lang === "it" ? "Anteprima " : "Preview ") + itemCategoryLabel(item.category, lang, item.category_label)}
                 >
                   <div className="relative overflow-hidden bg-white" style={{ aspectRatio: "1/1", padding: "16px" }}>
                     <div className="absolute inset-0 p-4 transition-transform duration-500 group-hover:scale-[1.05]">
@@ -512,7 +513,7 @@ function CollectionDetailModal({
                       <span className="text-[9.5px] tracking-[0.2em] uppercase text-gold font-medium">{item.ref}</span>
                     )}
                     <span className="font-serif text-[13px] leading-[1.2] text-warm-black">
-                      {itemCategoryLabel(item.category, lang)}
+                      {itemCategoryLabel(item.category, lang, item.category_label)}
                     </span>
                   </div>
                 </button>
@@ -663,7 +664,7 @@ function GridCard({
             {config.show_ref_badge && (
               <span className="font-sans text-[10px] tracking-[0.22em] uppercase text-gold-light font-medium">{card.ref}</span>
             )}
-            <span className="font-serif text-[24px] text-warm-white leading-[1.1]">{itemCategoryLabel(card.category, lang)}</span>
+            <span className="font-serif text-[24px] text-warm-white leading-[1.1]">{itemCategoryLabel(card.category, lang, card.category_label)}</span>
             <motion.span
               className="inline-flex items-center gap-2 font-sans text-[11px] tracking-[0.18em] uppercase text-gold-light mt-1"
               variants={{ rest: { x: -4 }, hover: { x: 0 } }}

@@ -22,10 +22,17 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     const { id } = await params;
     const body = await req.json().catch(() => null);
     const name = typeof body?.name === "string" ? body.name : "";
+    const nameEn = typeof body?.name_en === "string" ? body.name_en.trim() : "";
 
     const supabase = createAdminClient();
     const category = await renameCatalogueCategory(supabase, id, name);
-    return NextResponse.json({ success: true, category });
+    const { data: localized } = await supabase
+      .from("catalogue_categories")
+      .update({ name_en: nameEn || category.name })
+      .eq("id", id)
+      .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
+      .single();
+    return NextResponse.json({ success: true, category: localized ?? category });
   } catch (err) {
     await logVitrixError(err, "/api/vitrix/site-catalogue/categories/[id]");
     const message = err instanceof Error ? err.message : "Internal server error";

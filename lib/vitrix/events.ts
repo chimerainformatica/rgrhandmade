@@ -47,6 +47,15 @@ function excerptFrom(value: string | null): string | null {
   return value.replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
+function publicationDateValue(value: unknown): string | null {
+  const normalized = trimString(value);
+  if (!normalized) return null;
+  const match = /^(\d{4})-(\d{2})(?:-\d{2})?$/.exec(normalized);
+  if (!match) return null;
+  const month = Number(match[2]);
+  return month >= 1 && month <= 12 ? `${match[1]}-${match[2]}-01` : null;
+}
+
 export function inputFromFormData(formData: FormData): EventInput {
   const input: EventInput = {};
   formData.forEach((value, key) => {
@@ -68,6 +77,9 @@ export function normalizeEventPayload(input: EventInput, existingSlug?: string |
   const mainImageUrl = trimString(input.main_image_url) ?? trimString(input.cover_image);
 
   return {
+    ...(trimString(input.translation_group_id)
+      ? { translation_group_id: trimString(input.translation_group_id) }
+      : {}),
     title,
     slug,
     type,
@@ -84,6 +96,7 @@ export function normalizeEventPayload(input: EventInput, existingSlug?: string |
     event_start_at: trimString(input.event_start_at),
     event_end_at: trimString(input.event_end_at),
     event_date_label: eventDateLabel,
+    publication_date: publicationDateValue(input.publication_date),
     main_image_path: trimString(input.main_image_path),
     main_image_url: mainImageUrl,
     cover_image: mainImageUrl,
@@ -114,6 +127,7 @@ export function validateEventPayload(payload: ReturnType<typeof normalizeEventPa
   if (payload.status === "published") {
     if (!payload.category) return "La categoria e obbligatoria per pubblicare.";
     if (payload.type === "publication") {
+      if (!payload.publication_date) return "Il mese e anno di pubblicazione sono obbligatori.";
       if (!payload.event_date_label) return "Il numero o l'edizione e obbligatorio per pubblicare.";
       if (!payload.main_image_url && !payload.main_image_path) return "La copertina e obbligatoria per pubblicare.";
     } else if (!payload.excerpt) {

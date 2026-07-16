@@ -4,10 +4,13 @@ import type { User } from "@supabase/supabase-js";
 
 export type CatalogueRow = {
   id: number;
+  translation_group_id?: string;
+  parent_translation_group_id?: string | null;
   ref: string;
   title: string;
   description: string | null;
   category: string;
+  category_label?: string;
   img_path: string | null;
   img_position: string | null;
   lang: string;
@@ -21,7 +24,6 @@ export type CatalogueRow = {
 
 export type CollectionRow = CatalogueRow;
 
-const CATALOGUE_LANGS = ["it", "en"] as const;
 const PARURE_CATEGORY = "Parure";
 
 function isCatalogueCollection(row: CatalogueRow): boolean {
@@ -45,31 +47,6 @@ function filterEmptyCatalogueCollections(items: CatalogueRow[]): CatalogueRow[] 
   return items.filter((row) => !isCatalogueCollection(row) || collectionIdsWithChildren.has(row.id));
 }
 
-function fillCatalogueImageFromSibling(items: CatalogueRow[], lang: string) {
-  const byRef = new Map<string, CatalogueRow[]>();
-
-  items.forEach((row) => {
-    const list = byRef.get(row.ref) ?? [];
-    list.push(row);
-    byRef.set(row.ref, list);
-  });
-
-  return items
-    .filter((row) => row.lang === lang)
-    .map((row) => {
-      if (row.img_path?.trim()) return row;
-
-      const sibling = byRef.get(row.ref)?.find((item) => item.id !== row.id && item.img_path?.trim());
-      if (!sibling) return row;
-
-      return {
-        ...row,
-        img_path: sibling.img_path,
-        img_position: row.img_position ?? sibling.img_position,
-      };
-    });
-}
-
 export type NewsRow = {
   id: number;
   category: string;
@@ -89,6 +66,7 @@ export type NewsRow = {
   event_start_at?: string | null;
   event_end_at?: string | null;
   event_date_label?: string | null;
+  publication_date?: string | null;
   main_image_path?: string | null;
   main_image_url?: string | null;
   og_image_path?: string | null;
@@ -115,27 +93,26 @@ export function useCatalogue(lang: string = "it") {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!hasSupabaseBrowserConfig || !supabaseBrowser) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
-    supabaseBrowser
-      .from("catalogue")
-      .select("*")
-      .in("lang", CATALOGUE_LANGS as unknown as string[])
-      .eq("status", "published")
-      .order("sort_order")
-      .then(({ data, error: err }) => {
-        if (err || !data || data.length === 0) {
+    fetch(`/api/catalogue?lang=${encodeURIComponent(lang)}`)
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "Errore caricamento catalogo.");
+        return json.catalogue as CatalogueRow[] | undefined;
+      })
+      .then((data) => {
+        if (!data || data.length === 0) {
           setItems([]);
-          if (err) setError(err.message);
         } else {
-          const normalizedItems = fillCatalogueImageFromSibling(data as CatalogueRow[], lang);
-          setItems(filterEmptyCatalogueCollections(normalizedItems));
+          setItems(filterEmptyCatalogueCollections(data));
         }
+        setError(null);
+      })
+      .catch((err: Error) => {
+        setItems([]);
+        setError(err.message);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, [lang]);

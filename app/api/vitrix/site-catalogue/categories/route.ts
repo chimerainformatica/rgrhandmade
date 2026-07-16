@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => null);
     const name = normalizeCatalogueCategoryName(String(body?.name ?? ""));
+    const nameEn = normalizeCatalogueCategoryName(String(body?.name_en ?? name));
 
     if (!name) {
       return NextResponse.json(
@@ -46,7 +47,13 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
     const category = await ensureCatalogueCategory(supabase, name);
-    return NextResponse.json({ success: true, category });
+    const { data: localized } = await supabase
+      .from("catalogue_categories")
+      .update({ name_en: nameEn || name })
+      .eq("id", category.id)
+      .select("id,catalogue_key,name,name_en,sort_order,created_at,updated_at")
+      .single();
+    return NextResponse.json({ success: true, category: localized ?? category });
   } catch (err) {
     await logVitrixError(err, "/api/vitrix/site-catalogue/categories");
     const message = err instanceof Error ? err.message : "Internal server error";
