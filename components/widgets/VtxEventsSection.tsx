@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 import type { Lang } from "@/lib/content";
 import { useNews, type NewsRow } from "@/lib/useSupabase";
-import { getCoverImageUrl, getThumbnailImageUrl, getZoomImageUrl, preloadImage } from "@/lib/vitrix/image";
+import { getCoverImageUrl, getPublicationCardImageUrl, getThumbnailImageUrl, getZoomImageUrl, preloadImage } from "@/lib/vitrix/image";
 import type { VtxEventsConfig } from "@/lib/vitrix/types";
 
 const BOXED_CONTAINER = "max-w-[1280px] mx-auto px-8 max-[640px]:px-4";
@@ -76,9 +76,14 @@ function EventImage({
   alt: string;
   position?: string | null;
   priority?: boolean;
-  format?: "cover" | "thumbnail";
+  format?: "cover" | "thumbnail" | "publication";
 }) {
-  const url = format === "thumbnail" ? getThumbnailImageUrl(src) : getCoverImageUrl(src);
+  const url =
+    format === "thumbnail"
+      ? getThumbnailImageUrl(src)
+      : format === "publication"
+        ? getPublicationCardImageUrl(src)
+        : getCoverImageUrl(src);
   const [failed, setFailed] = useState(false);
 
   if (!url || failed) {
@@ -99,6 +104,7 @@ function EventImage({
       sizes="(max-width: 680px) 100vw, (max-width: 1024px) 50vw, 33vw"
       className="object-cover"
       style={{ objectPosition: position || "center" }}
+      quality={format === "publication" ? 90 : undefined}
       priority={priority}
       unoptimized={shouldBypassNextOptimization(url)}
       onError={() => setFailed(true)}
@@ -161,6 +167,11 @@ type ImagePreview = {
   src: string;
   alt: string;
 };
+
+/** Rapporto usato finché non si conoscono le dimensioni reali della copertina. */
+const DEFAULT_PREVIEW_RATIO = 3 / 4;
+const PREVIEW_MAX_HEIGHT = "min(90vh, 1100px)";
+const PREVIEW_MAX_WIDTH = "min(92vw, 900px)";
 
 function NewsCard({
   item,
@@ -263,13 +274,23 @@ function PublicationCard({ item, index, lang, onPreview }: { item: NewsRow; inde
         type="button"
         disabled={!zoomUrl}
         onClick={(event) => zoomUrl && onPreview({ src: zoomUrl, alt }, event.currentTarget)}
-        className="relative block aspect-[3/4] w-full cursor-zoom-in overflow-hidden border border-white/15 bg-[#29241f] text-left shadow-[0_24px_60px_rgba(0,0,0,0.34)] transition-transform duration-300 hover:-translate-y-1 disabled:cursor-default"
+        className="group/card relative block aspect-[3/4] w-full cursor-zoom-in overflow-hidden border border-white/15 bg-[#29241f] text-left shadow-[0_24px_60px_rgba(0,0,0,0.34)] transition-transform duration-300 hover:-translate-y-1 disabled:cursor-default"
         aria-label={zoomUrl ? `${lang === "it" ? "Apri copertina" : "Open cover"}: ${alt}` : undefined}
       >
         <div className="relative h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.025]">
-          <EventImage src={coverOf(item)} alt={alt} position={item.image_position} priority={index < 2} format="thumbnail" />
+          <EventImage src={coverOf(item)} alt={alt} position={item.image_position} priority={index < 2} format="publication" />
         </div>
-        {zoomUrl && <span className="absolute bottom-3 right-3 border border-white/30 bg-black/60 px-3 py-2 font-sans text-[9px] font-semibold uppercase tracking-[0.15em] text-white backdrop-blur-sm">{lang === "it" ? "Sfoglia" : "View"}</span>}
+        {zoomUrl && (
+          <span
+            className="pointer-events-none absolute inset-0 flex items-end justify-center bg-[linear-gradient(180deg,transparent_40%,rgba(23,20,17,0.86)_100%)] opacity-0 transition-opacity duration-500 ease-out group-hover/card:opacity-100 group-focus-visible/card:opacity-100 motion-reduce:transition-none"
+            aria-hidden="true"
+          >
+            <span className="mb-7 translate-y-2 text-center font-sans text-[10px] font-semibold uppercase tracking-[0.22em] text-ivory transition-transform duration-500 ease-out group-hover/card:translate-y-0 group-focus-visible/card:translate-y-0 motion-reduce:transition-none motion-reduce:translate-y-0">
+              {lang === "it" ? "Anteprima" : "Preview"}
+              <span className="mx-auto mt-2 block h-px w-8 bg-gold-light" />
+            </span>
+          </span>
+        )}
       </button>
       <div className="pt-5">
         {edition && <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light/75">{edition}</p>}
@@ -291,6 +312,7 @@ export function VtxEventsSection({ config, lang }: Props) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
+  const [previewRatio, setPreviewRatio] = useState(DEFAULT_PREVIEW_RATIO);
   const preloadTokenRef = useRef(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
@@ -314,7 +336,7 @@ export function VtxEventsSection({ config, lang }: Props) {
       setGridLoading(true);
       const sources = [
         ...news.filter((item) => item.type !== "publication").slice(0, config.items_limit || 6).map((item) => getCoverImageUrl(coverOf(item))),
-        ...news.filter((item) => item.type === "publication").slice(0, config.publications.items_limit || 8).map((item) => getThumbnailImageUrl(coverOf(item))),
+        ...news.filter((item) => item.type === "publication").slice(0, config.publications.items_limit || 8).map((item) => getPublicationCardImageUrl(coverOf(item))),
       ].filter((source): source is string => Boolean(source));
       if (sources.length > 0) await Promise.all(sources.map((source) => preloadImage(source)));
 
@@ -368,6 +390,7 @@ export function VtxEventsSection({ config, lang }: Props) {
 
   const openImagePreview = useCallback((preview: ImagePreview, trigger: HTMLButtonElement) => {
     previewTriggerRef.current = trigger;
+    setPreviewRatio(DEFAULT_PREVIEW_RATIO);
     setImagePreview(preview);
   }, []);
 
@@ -502,15 +525,24 @@ export function VtxEventsSection({ config, lang }: Props) {
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative h-[min(90vh,960px)] w-[min(92vw,760px)] overflow-hidden border border-warm-white/20 bg-warm-black shadow-[0_30px_100px_rgba(0,0,0,0.55)]"
+            style={{
+              aspectRatio: previewRatio,
+              width: `min(${PREVIEW_MAX_WIDTH}, calc(${PREVIEW_MAX_HEIGHT} * ${previewRatio}))`,
+            }}
+            className="relative overflow-hidden border border-warm-white/20 bg-warm-black shadow-[0_30px_100px_rgba(0,0,0,0.55)]"
           >
             <Image
               src={imagePreview.src}
               alt={imagePreview.alt}
               fill
-              sizes="92vw"
+              sizes="(max-width: 980px) 92vw, 900px"
+              quality={95}
               className="object-contain"
               unoptimized={shouldBypassNextOptimization(imagePreview.src)}
+              onLoad={(event) => {
+                const { naturalWidth, naturalHeight } = event.currentTarget;
+                if (naturalWidth > 0 && naturalHeight > 0) setPreviewRatio(naturalWidth / naturalHeight);
+              }}
             />
             <button
               ref={lightboxCloseRef}

@@ -1,14 +1,18 @@
 "use client";
 
 import { BrandLogo } from "@/components/Brand";
+import { FooterLegalLinks } from "@/components/FooterLegalLinks";
 import { FooterContactForm } from "@/components/FooterContactForm";
 import { content, type Lang } from "@/lib/content";
-import { Instagram } from "lucide-react";
+import { ChevronRight, Instagram, Mail, Phone } from "lucide-react";
+import type { ReactNode } from "react";
 
 const asset = (n: string) => `/assets/rgr/${n}`;
 const BOXED_CONTAINER = "max-w-[1180px] mx-auto px-8 max-[640px]:px-4";
 const INSTAGRAM_URL = "https://www.instagram.com/r.g.r.handmade";
 const MAPS_URL = "https://www.google.com/maps/dir/43.4700288,11.8325248/Via+Piero+Calamandrei,+253,+52100+Arezzo+AR/@43.4657173,11.8169862,15z/data=!4m10!4m9!1m1!4e1!1m5!1m1!1s0x132bece8e04023b9:0x3875d6f93b97586b!2m2!1d11.8294183!2d43.4591404!3e0?entry=ttu&g_ep=EgoyMDI2MDYyMi4wIKXMDSoASAFQAw%3D%3D";
+// Riportare a true per riattivare Privacy, Cookie, Area riservata e Credits.
+const SHOW_FOOTER_LEGAL = false;
 const HIDDEN_HOME_HREFS = new Set(["#atelier"]);
 const visibleExploreLinks = (links: Array<readonly [string, string]>) =>
   links.filter(([, href]) => !HIDDEN_HOME_HREFS.has(href));
@@ -16,6 +20,24 @@ const visibleExploreLinks = (links: Array<readonly [string, string]>) =>
 type SiteFooterProps = {
   lang: Lang;
 };
+
+function FooterHeading({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <h3 className="m-0 font-serif text-[15px] font-medium uppercase tracking-[0.2em] text-gold-light">{children}</h3>
+      <span className="mt-4 block h-px w-7 bg-gold" aria-hidden="true" />
+    </>
+  );
+}
+
+function AtelierSketch() {
+  return (
+    <svg viewBox="0 0 240 92" className="mt-8 h-auto w-full max-w-[205px] text-gold/45" fill="none" aria-hidden="true">
+      <path d="M18 80h204M35 77V34h170v43M27 34h186M48 31l72-25 72 25M64 31l56-19 56 19M53 77V40m134 37V40M75 77V40m90 37V40M97 77V49c0-15 10-24 23-24s23 9 23 24v28M108 77V51c0-8 5-13 12-13s12 5 12 13v26M24 84h192" stroke="currentColor" strokeWidth="1" />
+      <path d="M14 88h212M91 43h58M100 55h40" stroke="currentColor" strokeWidth=".7" />
+    </svg>
+  );
+}
 
 export function SiteFooter({ lang }: SiteFooterProps) {
   const t = content[lang];
@@ -36,28 +58,28 @@ export function SiteFooter({ lang }: SiteFooterProps) {
         </div>
       </section>
 
-      <section className="border-t border-white/12 bg-[#120f0d]">
-        <div className="mx-auto max-w-[1440px] px-12 pt-14 pb-10 max-[900px]:px-8 max-[640px]:px-4 max-[640px]:pt-10 max-[640px]:pb-6">
-          {/* Link grid */}
-          <div className="mb-14 grid grid-cols-1 gap-x-16 gap-y-10 sm:grid-cols-2 lg:grid-cols-6 xl:gap-x-16 max-xl:gap-x-10 max-[640px]:mb-10 max-[520px]:gap-8">
+      <section className="relative overflow-hidden border-t border-white/10 bg-[#0d0b09]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_35%,rgba(173,128,55,0.08),transparent_28%),linear-gradient(110deg,transparent_0%,rgba(255,255,255,0.018)_48%,transparent_76%)]" aria-hidden="true" />
+        <div className="relative mx-auto max-w-[1480px] px-14 pb-9 pt-20 max-[1100px]:px-8 max-[640px]:px-5 max-[640px]:pb-6 max-[640px]:pt-12">
+          <div className={`grid gap-0 max-[1100px]:grid-cols-2 max-[1100px]:gap-x-12 max-[1100px]:gap-y-14 max-[640px]:grid-cols-1 max-[640px]:gap-y-10 ${SHOW_FOOTER_LEGAL ? "grid-cols-[1.35fr_1fr_1fr_1fr_1fr]" : "grid-cols-[1.35fr_1fr_1fr_1fr]"}`}>
             {/* Brand */}
-            <div className="sm:col-span-2 lg:col-span-2">
-              <BrandLogo className="h-14 mb-5" />
-              <p className="max-w-sm text-sm leading-6 text-ivory/65">
+            <div className="pr-12 max-[1100px]:pr-0">
+              <BrandLogo className="mb-8 h-[82px] max-[640px]:h-[66px]" />
+              <p className="max-w-[330px] font-serif text-[16px] leading-7 text-ivory/70 max-[640px]:text-[15px]">
                 {t.footer.claim.split(". ").map((line, index, lines) => (
                   <span key={line} className="block">
                     {line}{index < lines.length - 1 ? "." : ""}
                   </span>
                 ))}
               </p>
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-8 flex items-center gap-3">
                 <a
                   href={INSTAGRAM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Instagram - RGR Handmade"
                   aria-label="Instagram - RGR Handmade"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/18 text-ivory/62 transition-all duration-200 hover:-translate-y-px hover:border-gold hover:bg-gold hover:text-warm-black"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-gold/45 text-gold-light transition-all duration-300 hover:-translate-y-1 hover:border-gold hover:bg-gold hover:text-warm-black"
                 >
                   <Instagram size={18} strokeWidth={1.8} aria-hidden="true" />
                 </a>
@@ -65,17 +87,15 @@ export function SiteFooter({ lang }: SiteFooterProps) {
             </div>
 
             {/* Atelier */}
-            <div>
-              <h4 className="font-sans text-[11px] tracking-[0.22em] uppercase text-gold font-semibold mb-4 m-0">
-                {t.footer.colVisit}
-              </h4>
-              <ul className="list-none p-0 m-0 grid gap-2">
+            <div className="border-l border-gold/20 px-10 max-[1100px]:border-l-0 max-[1100px]:px-0">
+              <FooterHeading>{t.footer.colVisit}</FooterHeading>
+              <ul className="mt-7 grid list-none gap-2 p-0">
                 <li>
-                  <p className="text-[14px] text-ivory/78 m-0 max-[480px]:text-[13px]">{t.footer.addrTitle}</p>
+                  <p className="m-0 font-serif text-[16px] leading-7 text-ivory/78 max-[480px]:text-[15px]">{t.footer.addrTitle}</p>
                 </li>
                 {t.footer.addrLines.map((line) => (
                   <li key={line}>
-                    <p className="text-[14px] m-0 max-[480px]:text-[13px]" style={{ color: "rgba(247,242,234,.55)" }}>
+                    <p className="m-0 font-serif text-[16px] leading-7 text-ivory/58 max-[480px]:text-[15px]">
                       {line}
                     </p>
                   </li>
@@ -85,96 +105,65 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                     href={MAPS_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-11 items-center font-sans text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-light transition-colors duration-200 hover:text-gold"
+                    className="inline-flex min-h-11 items-center font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light transition-colors duration-200 hover:text-gold"
                   >
                     Google Maps
                   </a>
                 </li>
               </ul>
+              <AtelierSketch />
             </div>
 
             {/* Contact */}
-            <div>
-              <h4 className="font-sans text-[11px] tracking-[0.22em] uppercase text-gold font-semibold mb-4 m-0">
-                {t.footer.colContact}
-              </h4>
-              <ul className="list-none p-0 m-0 grid gap-2">
+            <div className="border-l border-gold/20 px-10 max-[1100px]:border-l-0 max-[1100px]:px-0">
+              <FooterHeading>{t.footer.colContact}</FooterHeading>
+              <ul className="mt-7 grid list-none gap-4 p-0">
                 {t.footer.contact.map(([label, value]) => (
                   <li key={label}>
-                    {label === "Email" ? (
-                      <a
-                        href={`mailto:${value}`}
-                        title={`${label} - RGR Handmade`}
-                        className="text-[14px] text-ivory/78 hover:text-gold-light transition-colors duration-200 max-[480px]:text-[13px]"
-                      >
-                        {value}
-                      </a>
-                    ) : (
-                      <a
-                        href={`tel:${value.replace(/[^0-9+]/g, "")}`}
-                        title={`${label} - RGR Handmade`}
-                        className="text-[14px] text-ivory/78 hover:text-gold-light transition-colors duration-200 max-[480px]:text-[13px]"
-                      >
-                        {value}
-                      </a>
-                    )}
+                    <a
+                      href={label === "Email" ? `mailto:${value}` : `tel:${value.replace(/[^0-9+]/g, "")}`}
+                      title={`${label} - RGR Handmade`}
+                      className="group flex min-h-12 items-center gap-4 font-serif text-[15px] text-ivory/76 transition-colors hover:text-gold-light"
+                    >
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/55 text-gold transition-colors group-hover:bg-gold group-hover:text-warm-black">
+                        {label === "Email" ? <Mail size={17} strokeWidth={1.4} aria-hidden="true" /> : <Phone size={17} strokeWidth={1.4} aria-hidden="true" />}
+                      </span>
+                      {value}
+                    </a>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Explore */}
-            <div>
-              <h4 className="font-sans text-[11px] tracking-[0.22em] uppercase text-gold font-semibold mb-4 m-0">
-                {t.footer.colExplore}
-              </h4>
-              <ul className="list-none p-0 m-0 grid gap-2">
+            <div className="border-l border-gold/20 pl-10 max-[1100px]:border-l-0 max-[1100px]:pl-0">
+              <FooterHeading>{t.footer.colExplore}</FooterHeading>
+              <ul className="mt-6 grid list-none gap-1 p-0">
                 {visibleExploreLinks(t.footer.explore).map(([label, href]) => (
                   <li key={href}>
                     <a
                       href={href}
                       title={`${label} - RGR Handmade`}
-                      className="inline-flex min-h-9 items-center text-[14px] text-ivory/78 transition-colors duration-200 hover:text-gold-light max-[480px]:min-h-11 max-[480px]:text-[13px]"
+                      className="group flex min-h-11 items-center justify-between gap-5 font-serif text-[16px] text-ivory/72 transition-colors duration-200 hover:text-gold-light"
                     >
-                      {label}
+                      <span>{label}</span>
+                      <ChevronRight className="text-gold transition-transform group-hover:translate-x-1" size={15} strokeWidth={1.4} aria-hidden="true" />
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Legal */}
-            <div>
-              <h4 className="font-sans text-[11px] tracking-[0.22em] uppercase text-gold font-semibold mb-4 m-0">
-                {t.footer.colLegalLinks}
-              </h4>
-              <ul className="list-none p-0 m-0 grid gap-2">
-                {t.footer.legal.map(([label, href]) => (
-                  <li key={`${label}-${href}`}>
-                    <a
-                      href={href === "#admin" ? "/admin/login?next=/admin" : href}
-                      title={`${label} - RGR Handmade`}
-                      className="inline-flex min-h-9 items-center text-[14px] text-ivory/78 transition-colors duration-200 hover:text-gold-light max-[480px]:min-h-11 max-[480px]:text-[13px]"
-                    >
-                      {label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {SHOW_FOOTER_LEGAL && <FooterLegalLinks title={t.footer.colLegalLinks} links={t.footer.legal} />}
           </div>
 
-          {/* Bottom bar */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-x-7 gap-y-2 pt-7 border-t border-white/14 font-sans text-[12px] max-[640px]:justify-start max-[480px]:flex-col max-[480px]:items-start max-[480px]:gap-y-1.5 max-[480px]:text-[11px]"
-            style={{ color: "rgba(247,242,234,.55)" }}
-          >
-            <span>&copy; 2026 R.G.R. s.n.c. &mdash; Arezzo, Italy</span>
-            <span className="flex flex-wrap gap-x-7 gap-y-2">
+          <div className="relative mt-16 border-t border-gold/55 pt-8 max-[640px]:mt-12">
+            <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-gold bg-[#0d0b09]" aria-hidden="true" />
+            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 font-serif text-[12px] tracking-[0.03em] text-ivory/48 max-[700px]:flex-col max-[700px]:items-start">
+              <span>&copy; 2026 R.G.R. s.n.c. &mdash; Arezzo, Italia</span>
               <span>P.IVA 01358780516</span>
               <span>Handmade &middot; Made in Italy</span>
-              <span>Design &amp; build &middot; Chimera Informatica</span>
-            </span>
+            </div>
           </div>
         </div>
       </section>
