@@ -274,13 +274,23 @@ function PublicationCard({ item, index, lang, onPreview }: { item: NewsRow; inde
         type="button"
         disabled={!zoomUrl}
         onClick={(event) => zoomUrl && onPreview({ src: zoomUrl, alt }, event.currentTarget)}
-        className="relative block aspect-[3/4] w-full cursor-zoom-in overflow-hidden border border-white/15 bg-[#29241f] text-left shadow-[0_24px_60px_rgba(0,0,0,0.34)] transition-transform duration-300 hover:-translate-y-1 disabled:cursor-default"
+        className="group/card relative block aspect-[3/4] w-full cursor-zoom-in overflow-hidden border border-white/15 bg-[#29241f] text-left shadow-[0_24px_60px_rgba(0,0,0,0.34)] transition-transform duration-300 hover:-translate-y-1 disabled:cursor-default"
         aria-label={zoomUrl ? `${lang === "it" ? "Apri copertina" : "Open cover"}: ${alt}` : undefined}
       >
         <div className="relative h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.025]">
           <EventImage src={coverOf(item)} alt={alt} position={item.image_position} priority={index < 2} format="publication" />
         </div>
-        {zoomUrl && <span className="absolute bottom-3 right-3 border border-white/30 bg-black/60 px-3 py-2 font-sans text-[9px] font-semibold uppercase tracking-[0.15em] text-white backdrop-blur-sm">{lang === "it" ? "Sfoglia" : "View"}</span>}
+        {zoomUrl && (
+          <span
+            className="pointer-events-none absolute inset-0 flex items-end justify-center bg-[linear-gradient(180deg,transparent_40%,rgba(23,20,17,0.86)_100%)] opacity-0 transition-opacity duration-500 ease-out group-hover/card:opacity-100 group-focus-visible/card:opacity-100 motion-reduce:transition-none"
+            aria-hidden="true"
+          >
+            <span className="mb-7 translate-y-2 text-center font-sans text-[10px] font-semibold uppercase tracking-[0.22em] text-ivory transition-transform duration-500 ease-out group-hover/card:translate-y-0 group-focus-visible/card:translate-y-0 motion-reduce:transition-none motion-reduce:translate-y-0">
+              {lang === "it" ? "Anteprima" : "Preview"}
+              <span className="mx-auto mt-2 block h-px w-8 bg-gold-light" />
+            </span>
+          </span>
+        )}
       </button>
       <div className="pt-5">
         {edition && <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light/75">{edition}</p>}
