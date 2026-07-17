@@ -72,7 +72,7 @@ export function renderContactEmail(data: ContactPayload, opts?: { siteName?: str
     "",
     ...rows.map((r) => `${r.label}: ${r.value}`),
     "",
-    data.privacy ? `Consenso privacy: ${data.privacy}` : "Consenso privacy: —",
+    data.privacy ? `Presa visione privacy: ${data.privacy}` : "Presa visione privacy: —",
     `Ricevuto il: ${sentAt}`,
     "",
     `— Inviato automaticamente da ${siteUrl}`,
@@ -133,7 +133,7 @@ export function renderContactEmail(data: ContactPayload, opts?: { siteName?: str
           <tr>
             <td style="padding:0 36px 28px;">
               <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.7;color:${COLORS.ivoryMuted};">
-                Consenso privacy: ${data.privacy ? escapeHtml(data.privacy) : "—"}<br />
+                Presa visione privacy: ${data.privacy ? escapeHtml(data.privacy) : "—"}<br />
                 Ricevuto il: ${escapeHtml(sentAt)}
               </div>
             </td>

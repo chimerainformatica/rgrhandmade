@@ -19,7 +19,10 @@ type FooterContactCopy = {
   phone: string;
   message: string;
   messagePlaceholder: string;
-  privacy: string;
+  privacyBefore: string;
+  privacyLink: string;
+  privacyAfter: string;
+  privacyHref: string;
   submit: string;
   sending: string;
   success: string;
@@ -198,10 +201,19 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
                 name="privacy"
                 type="checkbox"
                 required
-                value="Accettata"
+                value="Presa visione"
                 className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
               />
-              <span>{copy.privacy}</span>
+              <span>
+                {copy.privacyBefore}{" "}
+                <a
+                  href={copy.privacyHref}
+                  className="text-gold-light underline decoration-gold/55 underline-offset-4 transition-colors hover:text-gold focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                >
+                  {copy.privacyLink}
+                </a>{" "}
+                {copy.privacyAfter}
+              </span>
             </label>
 
             <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">

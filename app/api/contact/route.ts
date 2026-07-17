@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   const email = cleanText(payload.email, MAX_LENGTHS.email).toLowerCase();
   const phone = cleanText(payload.phone, MAX_LENGTHS.phone);
   const message = cleanMessage(payload.message);
-  const privacyAccepted = payload.privacy === true || payload.privacy === "true" || payload.privacy === "Accettata";
+  const privacyAccepted = payload.privacy === true || payload.privacy === "true" || payload.privacy === "Presa visione" || payload.privacy === "Accettata";
 
   if (!name || !email || !message || !privacyAccepted) {
     return NextResponse.json({ error: "Compila tutti i campi obbligatori." }, { status: 400 });
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       email,
       telefono: phone,
       messaggio: message,
-      privacy: "Accettata"
+      privacy: "Presa visione dell'informativa privacy"
     },
     { siteName: site.name, siteUrl: site.url }
   );
