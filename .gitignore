@@ -2,6 +2,7 @@
 node_modules/
 /.pnp
 .pnp.js
+.claude
 
 # Environment variables (credenziali, non committare mai)
 .env

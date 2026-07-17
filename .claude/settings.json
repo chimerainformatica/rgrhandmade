@@ -29,7 +29,9 @@
       "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:3001/\" -UseBasicParsing -TimeoutSec 180; \"status=$\\($r.StatusCode\\); len=$\\($r.Content.Length\\)\" } catch { \"ERR: $\\($_.Exception.Message\\)\" })",
       "Bash(git mv *)",
       "Bash(curl -s http://localhost:3000/)",
-      "Bash(curl -s https://rgrhandmade.chimerasviluppo.com)"
+      "Bash(curl -s https://rgrhandmade.chimerasviluppo.com)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/admin)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:3001/)"
     ],
     "additionalDirectories": [
       "C:\\ChimeraInformatica\\siti\\rgrhandmade.it"
