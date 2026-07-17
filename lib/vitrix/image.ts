@@ -12,6 +12,8 @@ export type ImageSize = { width: number; height: number; quality: number };
 
 /** Misure standard riusate dai widget. */
 export const THUMBNAIL_SIZE: ImageSize = { width: 720, height: 960, quality: 68 };
+/** Copertine pubblicazioni in griglia: leggibili anche su display 2x. */
+export const PUBLICATION_CARD_SIZE: ImageSize = { width: 1080, height: 1440, quality: 88 };
 export const PREVIEW_SIZE: ImageSize = { width: 1600, height: 2133, quality: 88 };
 /** Misura "wide" per cover editoriali (16:9). */
 export const COVER_SIZE: ImageSize = { width: 1280, height: 720, quality: 78 };
@@ -60,6 +62,10 @@ export function getImageSrc(path: string | null, size: ImageSize): string | null
 
 export function getThumbnailImageUrl(path: string | null): string | null {
   return getImageSrc(path, THUMBNAIL_SIZE);
+}
+
+export function getPublicationCardImageUrl(path: string | null): string | null {
+  return getImageSrc(path, PUBLICATION_CARD_SIZE);
 }
 
 export function getPreviewImageUrl(path: string | null): string | null {
