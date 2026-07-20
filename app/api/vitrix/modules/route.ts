@@ -5,7 +5,7 @@ import type { AdminModuleId } from "@/lib/admin-modules";
 import type { VitrixModuleRow } from "@/lib/vitrix/types";
 
 const LOCKED_MODULES = new Set<AdminModuleId>(["dashboard", "settings"]);
-const MODULE_IDS = new Set<AdminModuleId>(["dashboard", "catalogue", "events", "media", "settings", "widgets"]);
+const MODULE_IDS = new Set<AdminModuleId>(["dashboard", "catalogue", "events", "media", "settings", "widgets", "privacy"]);
 
 function isAdminModuleId(value: unknown): value is AdminModuleId {
   return typeof value === "string" && MODULE_IDS.has(value as AdminModuleId);

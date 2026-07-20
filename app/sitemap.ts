@@ -11,7 +11,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: settings.updated_at ?? new Date(),
       changeFrequency: "monthly",
       priority: 1
-    }
+    },
+    {
+      url: new URL("/privacy-policy", settings.canonical_url).toString(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: new URL("/cookie-policy", settings.canonical_url).toString(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
 
   if (!getSupabaseConfig().hasServiceRole) return entries;

@@ -105,7 +105,7 @@ export const it = {
   },
   footer: {
     claim: "Gioielli artigianali dal 1989. RGR trasforma emozioni in gioielli.",
-    colVisit: "Atelier",
+    colVisit: "Dove siamo",
     addrTitle: "Via Pietro Calamandrei, 253 A/11",
     addrLines: [
       "52100 Arezzo · Italy",
@@ -127,7 +127,10 @@ export const it = {
       phone: "Telefono",
       message: "Messaggio",
       messagePlaceholder: "Il tuo messaggio",
-      privacy: "Acconsento al trattamento dei dati per essere ricontattato.",
+      privacyBefore: "Dichiaro di aver letto",
+      privacyLink: "l'informativa privacy",
+      privacyAfter: ".",
+      privacyHref: "/privacy-policy",
       submit: "Invia",
       sending: "Invio in corso…",
       success: "Grazie! Il tuo messaggio è stato inviato. Ti risponderemo al più presto.",
@@ -144,8 +147,9 @@ export const it = {
     ] as [string, string][],
     colLegalLinks: "Legale",
     legal: [
-      ["Privacy Policy", "#"],
-      ["Cookie Policy", "#"],
+      ["Privacy Policy", "/privacy-policy"],
+      ["Cookie Policy", "/cookie-policy"],
+      ["Gestisci cookie", "#cookie-settings"],
       ["Area Riservata", "#admin"],
       ["Credits", "#"],
     ] as [string, string][],

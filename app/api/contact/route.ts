@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { site } from "@/lib/content";
+import {
+  CONTACT_RATE_LIMIT,
+  getClientIp,
+  hashClientIp,
+  isAllowedContactOrigin,
+  verifyTurnstile,
+} from "@/lib/contact-security";
 import { renderContactEmail } from "@/lib/email/contactTemplate";
+import { supabaseServer } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -22,6 +30,7 @@ type ContactPayload = {
   privacy?: unknown;
   website?: unknown;
   startedAt?: unknown;
+  turnstileToken?: unknown;
 };
 
 function cleanText(value: unknown, maxLength: number) {
@@ -50,6 +59,10 @@ function parseRecipients(value: string | undefined) {
 }
 
 export async function POST(request: Request) {
+  if (!isAllowedContactOrigin(request)) {
+    return NextResponse.json({ error: "Origine della richiesta non autorizzata." }, { status: 403 });
+  }
+
   let payload: ContactPayload;
 
   try {
@@ -71,7 +84,7 @@ export async function POST(request: Request) {
   const email = cleanText(payload.email, MAX_LENGTHS.email).toLowerCase();
   const phone = cleanText(payload.phone, MAX_LENGTHS.phone);
   const message = cleanMessage(payload.message);
-  const privacyAccepted = payload.privacy === true || payload.privacy === "true" || payload.privacy === "Accettata";
+  const privacyAccepted = payload.privacy === true || payload.privacy === "true" || payload.privacy === "Presa visione" || payload.privacy === "Accettata";
 
   if (!name || !email || !message || !privacyAccepted) {
     return NextResponse.json({ error: "Compila tutti i campi obbligatori." }, { status: 400 });
@@ -83,6 +96,46 @@ export async function POST(request: Request) {
 
   if (!isPhone(phone)) {
     return NextResponse.json({ error: "Inserisci un numero di telefono valido." }, { status: 400 });
+  }
+
+  const ip = getClientIp(request.headers);
+  const turnstileEnabled = process.env.TURNSTILE_ENABLED === "true";
+  if (turnstileEnabled) {
+    const token = cleanText(payload.turnstileToken, 2048);
+    const verification = await verifyTurnstile(token, ip);
+    if (!verification.configured) {
+      console.error("Turnstile is enabled but not configured");
+      return NextResponse.json({ error: "Servizio di verifica temporaneamente non disponibile." }, { status: 503 });
+    }
+    if (!verification.valid) {
+      return NextResponse.json({ error: "Verifica anti-spam non valida o scaduta. Riprova." }, { status: 400 });
+    }
+  }
+
+  const rateLimitSalt = process.env.CONTACT_RATE_LIMIT_SALT;
+  if (!supabaseServer || !rateLimitSalt) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("Contact form rate limit is not configured");
+      return NextResponse.json({ error: "Servizio di invio temporaneamente non disponibile." }, { status: 503 });
+    }
+  } else {
+    const { data, error } = await supabaseServer.rpc("consume_contact_form_rate_limit", {
+      p_client_hash: hashClientIp(ip, rateLimitSalt),
+      p_max_requests: CONTACT_RATE_LIMIT.maxRequests,
+      p_window_seconds: CONTACT_RATE_LIMIT.windowSeconds,
+    });
+    const rateLimit = (data as { allowed: boolean; retry_after_seconds: number }[] | null)?.[0];
+
+    if (error || !rateLimit) {
+      console.error("Contact form rate-limit error", error?.message ?? "No result");
+      return NextResponse.json({ error: "Servizio di invio temporaneamente non disponibile." }, { status: 503 });
+    }
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Hai raggiunto il limite di invii. Riprova piu tardi." },
+        { status: 429, headers: { "Retry-After": String(rateLimit.retry_after_seconds) } },
+      );
+    }
   }
 
   const host = process.env.SMTP_HOST;
@@ -112,7 +165,7 @@ export async function POST(request: Request) {
       email,
       telefono: phone,
       messaggio: message,
-      privacy: "Accettata"
+      privacy: "Presa visione dell'informativa privacy"
     },
     { siteName: site.name, siteUrl: site.url }
   );

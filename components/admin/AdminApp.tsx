@@ -15,6 +15,7 @@ import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import PrivacyTipOutlinedIcon from "@mui/icons-material/PrivacyTipOutlined";
 import UploadOutlinedIcon from "@mui/icons-material/UploadOutlined";
 import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import WidgetsOutlinedIcon from "@mui/icons-material/WidgetsOutlined";
@@ -44,6 +45,7 @@ import { EventsPanel } from "@/components/admin/EventsPanel";
 import { SiteCataloguePanel } from "@/components/admin/SiteCataloguePanel";
 import { VitrixLoader } from "@/components/admin/VitrixLoader";
 import { WidgetsModule } from "@/components/admin/WidgetsModule";
+import { PrivacyPanel } from "@/components/admin/PrivacyPanel";
 import type { AdminModuleId } from "@/lib/admin-modules";
 import type { VitrixUser } from "@/lib/vitrix/auth";
 import type { VitrixBootstrap, VitrixLogFile, VitrixModuleRow, VitrixSiteSettings } from "@/lib/vitrix/types";
@@ -62,7 +64,8 @@ const moduleIcons: Record<AdminModuleId, React.ElementType> = {
   events: ArticleOutlinedIcon,
   media: PhotoLibraryOutlinedIcon,
   settings: SettingsOutlinedIcon,
-  widgets: WidgetsOutlinedIcon
+  widgets: WidgetsOutlinedIcon,
+  privacy: PrivacyTipOutlinedIcon
 };
 
 const moduleMeta: Record<AdminModuleId, { title: string; eyebrow: string }> = {
@@ -71,7 +74,8 @@ const moduleMeta: Record<AdminModuleId, { title: string; eyebrow: string }> = {
   events: { title: "Eventi", eyebrow: "Contenuti" },
   media: { title: "Media", eyebrow: "Asset" },
   settings: { title: "Impostazioni", eyebrow: "SEO e manutenzione" },
-  widgets: { title: "Widgets", eyebrow: "Contenuti" }
+  widgets: { title: "Widgets", eyebrow: "Contenuti" },
+  privacy: { title: "Privacy & Cookie", eyebrow: "Compliance" }
 };
 
 /* ── shared sx helpers ──────────────────────────────────────── */
@@ -299,7 +303,7 @@ export function AdminApp({
       </Box>
 
       {/* ── MAIN ── */}
-      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", minWidth: 0 }}>
         {/* Topbar */}
         <Box
           component="header"
@@ -403,6 +407,10 @@ function ModuleBody({
   }
   if (moduleId === "widgets") {
     return <WidgetsModule />;
+  }
+  if (moduleId === "privacy") {
+    const canManage = !user || isSuperadmin || Boolean(user.permissions.includes("vitrix.privacy.manage"));
+    return <PrivacyPanel canManage={canManage} />;
   }
 
   const fallbackMeta = moduleMeta[moduleId as AdminModuleId] ?? moduleMeta.dashboard;

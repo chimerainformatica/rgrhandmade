@@ -19,7 +19,7 @@ export function LoginSubmitButton({ disabled = false }: LoginSubmitButtonProps) 
       fullWidth
       startIcon={pending ? <CircularProgress size={16} color="inherit" /> : null}
     >
-      {pending ? "Accesso in corso…" : "Accedi"}
+      {pending ? "Accesso in corso..." : "Accedi"}
     </Button>
   );
 }

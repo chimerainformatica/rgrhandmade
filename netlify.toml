@@ -4,7 +4,6 @@
 
 [build.environment]
   NEXT_PUBLIC_SITE_URL = "https://www.rgrhandmade.it"
-  CHIMERA_LICENSE_SITE_ID = "rgrhandmade"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

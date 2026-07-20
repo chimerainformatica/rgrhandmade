@@ -11,11 +11,12 @@ const asset = (n: string) => `/assets/rgr/${n}`;
 const BOXED_CONTAINER = "max-w-[1180px] mx-auto px-8 max-[640px]:px-4";
 const INSTAGRAM_URL = "https://www.instagram.com/r.g.r.handmade";
 const MAPS_URL = "https://www.google.com/maps/dir/43.4700288,11.8325248/Via+Piero+Calamandrei,+253,+52100+Arezzo+AR/@43.4657173,11.8169862,15z/data=!4m10!4m9!1m1!4e1!1m5!1m1!1s0x132bece8e04023b9:0x3875d6f93b97586b!2m2!1d11.8294183!2d43.4591404!3e0?entry=ttu&g_ep=EgoyMDI2MDYyMi4wIKXMDSoASAFQAw%3D%3D";
-// Riportare a true per riattivare Privacy, Cookie, Area riservata e Credits.
-const SHOW_FOOTER_LEGAL = false;
+const SHOW_FOOTER_LEGAL = true;
 const HIDDEN_HOME_HREFS = new Set(["#atelier"]);
 const visibleExploreLinks = (links: Array<readonly [string, string]>) =>
   links.filter(([, href]) => !HIDDEN_HOME_HREFS.has(href));
+const visibleLegalLinks = (links: Array<readonly [string, string]>) =>
+  links.filter(([, href]) => ["/privacy-policy", "/cookie-policy", "#cookie-settings"].includes(href));
 
 type SiteFooterProps = {
   lang: Lang;
@@ -154,15 +155,26 @@ export function SiteFooter({ lang }: SiteFooterProps) {
               </ul>
             </div>
 
-            {SHOW_FOOTER_LEGAL && <FooterLegalLinks title={t.footer.colLegalLinks} links={t.footer.legal} />}
+            {SHOW_FOOTER_LEGAL && <FooterLegalLinks title={t.footer.colLegalLinks} links={visibleLegalLinks(t.footer.legal)} />}
           </div>
 
           <div className="relative mt-16 border-t border-gold/55 pt-8 max-[640px]:mt-12">
             <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-gold bg-[#0d0b09]" aria-hidden="true" />
             <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 font-serif text-[12px] tracking-[0.03em] text-ivory/48 max-[700px]:flex-col max-[700px]:items-start">
-              <span>&copy; 2026 R.G.R. s.n.c. &mdash; Arezzo, Italia</span>
+              <span>&copy; 2026 R.G.R. DI GALLASTRONI ROSSELLA &amp; C. S.N.C. &mdash; Arezzo, Italia</span>
               <span>P.IVA 01358780516</span>
               <span>Handmade &middot; Made in Italy</span>
+            </div>
+            <div className="mt-6 text-center font-sans text-[10px] uppercase tracking-[0.22em] text-ivory/35">
+              Created by{" "}
+              <a
+                href="https://chimerainformatica.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold-light/70 transition-colors duration-200 hover:text-gold-light"
+              >
+                ChimeraInformatica
+              </a>
             </div>
           </div>
         </div>

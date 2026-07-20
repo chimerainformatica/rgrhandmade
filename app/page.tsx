@@ -5,6 +5,7 @@ import { site } from "@/lib/content";
 import { getSiteSettings } from "@/lib/vitrix/settings";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPublishedPrivacyConfig } from "@/lib/privacy/server";
 import { DEFAULT_VTX_CATALOGUE_CONFIG, DEFAULT_VTX_EVENTS_CONFIG, normalizeVtxEventsConfig, type MediaCollection, type MediaCollectionItem, type VtxCatalogueConfig, type VtxEventsConfig } from "@/lib/vitrix/types";
 
 const landingTitle = "Gioielli artigianali Made in Italy";
@@ -88,10 +89,11 @@ async function getVtxEventsConfig(): Promise<VtxEventsConfig> {
 
 export default async function Page() {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
-  const [settings, catalogueConfig, eventsConfig] = await Promise.all([
+  const [settings, catalogueConfig, eventsConfig, privacyConfig] = await Promise.all([
     getSiteSettings(),
     getVtxCatalogueConfig(),
     getVtxEventsConfig(),
+    getPublishedPrivacyConfig(),
   ]);
   const selectedCatalogue = await getCatalogueData(catalogueConfig.catalogue_slug);
 
@@ -125,6 +127,7 @@ export default async function Page() {
         catalogueConfig={catalogueConfig}
         eventsConfig={eventsConfig}
         catalogueData={selectedCatalogue}
+        privacyConfig={privacyConfig}
       />
     </>
   );

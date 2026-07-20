@@ -6,8 +6,8 @@ node_modules/
 
 # Environment variables (credenziali, non committare mai)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Next.js build artifacts
 .next/

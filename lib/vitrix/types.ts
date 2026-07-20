@@ -1,5 +1,4 @@
 import type { AdminModuleId } from "@/lib/admin-modules";
-import type { VitrixLicenseState } from "@/lib/vitrix/license";
 
 export type VitrixSource = "supabase" | "local";
 
@@ -359,7 +358,6 @@ export type VitrixBootstrap = {
   source: VitrixSource;
   connected: boolean;
   modules: VitrixModuleRow[];
-  license: VitrixLicenseState;
   settings: VitrixSiteSettings;
   logsSummary?: {
     open: number;
