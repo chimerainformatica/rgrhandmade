@@ -8,7 +8,7 @@ import type { VitrixUser } from "@/lib/vitrix/auth";
 
 function normalizeModuleRow(row: VitrixModuleRow | (Omit<VitrixModuleRow, "id"> & { id: string })): VitrixModuleRow | null {
   const id = row.id === "press" ? "events" : row.id;
-  if (id !== "dashboard" && id !== "catalogue" && id !== "events" && id !== "media" && id !== "settings" && id !== "widgets") {
+  if (id !== "dashboard" && id !== "catalogue" && id !== "events" && id !== "media" && id !== "settings" && id !== "widgets" && id !== "privacy") {
     return null;
   }
   return {

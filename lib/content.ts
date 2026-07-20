@@ -13,14 +13,17 @@ export type SiteCopy = typeof content.it;
 
 export const site = {
   name: "R.G.R. Handmade",
-  legalName: "R.G.R. s.n.c. di Gallastroni Rossella e Rosaria",
+  legalName: "R.G.R. DI GALLASTRONI ROSSELLA & C. S.N.C.",
   url: "https://www.rgrhandmade.it",
   locale: "it_IT",
   email: "info@rgrhandmade.it",
   phone: "+39 0575 299101",
   vat: "01358780516",
+  taxCode: "01358780516",
+  rea: "AR - 100364",
+  pec: "rgrhandmade@pec.it",
   address: {
-    street: "Via Pietro Calamandrei, 253 A/11",
+    street: "Via Piero Calamandrei 253/A11",
     postalCode: "52100",
     city: "Arezzo",
     country: "IT",

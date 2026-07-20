@@ -13,6 +13,15 @@ export function isAllowedContactOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return process.env.NODE_ENV !== "production";
 
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const hostname = new URL(origin).hostname;
+      if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    } catch {
+      return false;
+    }
+  }
+
   const allowedOrigins = [process.env.NEXT_PUBLIC_SITE_URL, process.env.CONTACT_ALLOWED_ORIGINS]
     .filter(Boolean)
     .flatMap((value) => value!.split(","))

@@ -8,7 +8,8 @@
     "start": "next start",
     "seed:superadmin": "node scripts/seed-superadmin.mjs",
     "lint": "eslint app components lib --ext .ts,.tsx --max-warnings=0",
-    "test:contact-security": "node --import tsx --test lib/contact-security-core.test.ts"
+    "test:contact-security": "node --import tsx --test lib/contact-security-core.test.ts",
+    "test:privacy": "node --import tsx --test lib/privacy/privacy.test.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

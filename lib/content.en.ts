@@ -148,7 +148,8 @@ export const en = {
     colLegalLinks: "Legal",
     legal: [
       ["Privacy Policy", "/privacy-policy"],
-      ["Cookie Policy", "#"],
+      ["Cookie Policy", "/cookie-policy"],
+      ["Manage cookies", "#cookie-settings"],
       ["Private Area", "#admin"],
       ["Credits", "#"],
     ] as [string, string][],

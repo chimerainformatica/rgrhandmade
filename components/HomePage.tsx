@@ -13,6 +13,8 @@ import { content, type Lang } from "@/lib/content";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DEFAULT_VTX_CATALOGUE_CONFIG, DEFAULT_VTX_EVENTS_CONFIG, type VtxCatalogueConfig, type VtxEventsConfig } from "@/lib/vitrix/types";
 import type { MediaCollection, MediaCollectionItem } from "@/lib/vitrix/types";
+import { PrivacyManager } from "@/components/privacy/PrivacyManager";
+import { DEFAULT_PRIVACY_CONFIG, type PrivacyConfig } from "@/lib/privacy/types";
 
 /* -- helpers ------------------------------------------------- */
 const asset = (n: string) => `/assets/rgr/${n}`;
@@ -79,11 +81,13 @@ export function HomePage({
   catalogueConfig = DEFAULT_VTX_CATALOGUE_CONFIG,
   eventsConfig = DEFAULT_VTX_EVENTS_CONFIG,
   catalogueData = null,
+  privacyConfig = DEFAULT_PRIVACY_CONFIG,
 }: {
   initialLang?: Lang;
   catalogueConfig?: VtxCatalogueConfig;
   eventsConfig?: VtxEventsConfig;
   catalogueData?: { collection: MediaCollection; items: MediaCollectionItem[] } | null;
+  privacyConfig?: PrivacyConfig;
 }) {
   const [lang, setLang] = useState<Lang>(initialLang);
   const t = content[lang];
@@ -242,6 +246,8 @@ export function HomePage({
       {eventsConfig.enabled && <VtxEventsSection config={eventsConfig} lang={lang} />}
 
       <SiteFooter lang={lang} />
+
+      <PrivacyManager config={privacyConfig} lang={lang} />
 
       {/* ============ WHATSAPP FAB ============ */}
       <WhatsAppFab label={lang === "it" ? "Scrivici su WhatsApp" : "Chat with us on WhatsApp"} />

@@ -1,4 +1,7 @@
+"use client";
+
 import { ChevronRight } from "lucide-react";
+import { OPEN_PRIVACY_SETTINGS_EVENT } from "@/lib/privacy/consent";
 
 type FooterLegalLinksProps = {
   title: string;
@@ -21,6 +24,10 @@ export function FooterLegalLinks({ title, links }: FooterLegalLinksProps) {
           <li key={`${label}-${href}`}>
             <a
               href={href === "#admin" ? "/admin/login?next=/admin" : href}
+              onClick={href === "#cookie-settings" ? (event) => {
+                event.preventDefault();
+                window.dispatchEvent(new Event(OPEN_PRIVACY_SETTINGS_EVENT));
+              } : undefined}
               className="group flex min-h-11 items-center justify-between gap-5 font-serif text-[15px] text-ivory/72 transition-colors hover:text-gold-light"
             >
               <span>{label}</span>

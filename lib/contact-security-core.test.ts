@@ -39,3 +39,17 @@ test("accepts only configured browser origins in production", () => {
     process.env.CONTACT_ALLOWED_ORIGINS = previousAdditionalOrigins;
   }
 });
+
+test("accepts loopback browser origins only outside production", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const environment = process.env as Record<string, string | undefined>;
+  environment.NODE_ENV = "development";
+
+  try {
+    assert.equal(isAllowedContactOrigin(new Request("http://localhost:3017/api/contact", { headers: { origin: "http://localhost:3017" } })), true);
+    assert.equal(isAllowedContactOrigin(new Request("http://127.0.0.1:3017/api/contact", { headers: { origin: "http://127.0.0.1:3017" } })), true);
+    assert.equal(isAllowedContactOrigin(new Request("http://localhost:3017/api/contact", { headers: { origin: "http://attacker.example" } })), false);
+  } finally {
+    environment.NODE_ENV = previousNodeEnv;
+  }
+});
