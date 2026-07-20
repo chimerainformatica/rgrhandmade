@@ -16,7 +16,7 @@ const HIDDEN_HOME_HREFS = new Set(["#atelier"]);
 const visibleExploreLinks = (links: Array<readonly [string, string]>) =>
   links.filter(([, href]) => !HIDDEN_HOME_HREFS.has(href));
 const visibleLegalLinks = (links: Array<readonly [string, string]>) =>
-  links.filter(([, href]) => href === "/privacy-policy");
+  links.filter(([, href]) => ["/privacy-policy", "/cookie-policy", "#cookie-settings"].includes(href));
 
 type SiteFooterProps = {
   lang: Lang;
@@ -161,7 +161,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
           <div className="relative mt-16 border-t border-gold/55 pt-8 max-[640px]:mt-12">
             <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-gold bg-[#0d0b09]" aria-hidden="true" />
             <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 font-serif text-[12px] tracking-[0.03em] text-ivory/48 max-[700px]:flex-col max-[700px]:items-start">
-              <span>&copy; 2026 R.G.R. s.n.c. &mdash; Arezzo, Italia</span>
+              <span>&copy; 2026 R.G.R. DI GALLASTRONI ROSSELLA &amp; C. S.N.C. &mdash; Arezzo, Italia</span>
               <span>P.IVA 01358780516</span>
               <span>Handmade &middot; Made in Italy</span>
             </div>
