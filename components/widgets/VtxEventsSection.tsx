@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 import type { Lang } from "@/lib/content";
@@ -166,6 +166,7 @@ function EventCardsSkeleton() {
 type ImagePreview = {
   src: string;
   alt: string;
+  index: number;
 };
 
 /**
@@ -259,9 +260,9 @@ function NewsCard({
 
 function PublicationCardsSkeleton() {
   return (
-    <div className="mt-12 grid grid-cols-4 gap-x-6 gap-y-10 max-[1024px]:grid-cols-2 max-[560px]:grid-cols-1">
+    <div className="mt-12 flex gap-6 overflow-hidden">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index}>
+        <div key={index} className="shrink-0 basis-[calc((100%_-_72px)/4)] max-[1024px]:basis-[calc((100%_-_24px)/2)] max-[560px]:basis-full">
           <div className="aspect-[3/4] skeleton bg-white/10" />
           <div className="mt-5 h-6 w-4/5 skeleton bg-white/10" />
           <div className="mt-3 h-3 w-2/5 skeleton bg-white/10" />
@@ -311,11 +312,17 @@ function PublicationCard({ item, index, lang, onPreview }: { item: NewsRow; inde
   const edition = [publicationMonthOf(item, lang), dateOf(item)].filter(Boolean).join(" · ");
 
   return (
-    <motion.article variants={PUBLICATION_CARD_VARIANTS} className="group">
+    <motion.article variants={PUBLICATION_CARD_VARIANTS} className="group shrink-0 basis-[calc((100%_-_72px)/4)] snap-start max-[1024px]:basis-[calc((100%_-_24px)/2)] max-[560px]:basis-full">
       <button
         type="button"
         disabled={!zoomUrl}
-        onClick={(event) => zoomUrl && onPreview({ src: zoomUrl, alt }, event.currentTarget)}
+        onMouseEnter={() => zoomUrl && preloadImage(zoomUrl)}
+        onFocus={() => zoomUrl && preloadImage(zoomUrl)}
+        onClick={(event) => {
+          if (!zoomUrl) return;
+          void preloadImage(zoomUrl);
+          onPreview({ src: zoomUrl, alt, index }, event.currentTarget);
+        }}
         className="group/card relative block aspect-[3/4] w-full cursor-zoom-in overflow-hidden border border-white/15 bg-[#29241f] text-left shadow-[0_24px_60px_rgba(0,0,0,0.34)] transition-transform duration-300 hover:-translate-y-1 disabled:cursor-default"
         aria-label={zoomUrl ? `${lang === "it" ? "Apri copertina" : "Open cover"}: ${alt}` : undefined}
       >
@@ -353,11 +360,16 @@ export function VtxEventsSection({ config, lang }: Props) {
   const [gridLoading, setGridLoading] = useState(true);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [canScrollLeftPub, setCanScrollLeftPub] = useState(false);
+  const [canScrollRightPub, setCanScrollRightPub] = useState(false);
   const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
+  const [previewDirection, setPreviewDirection] = useState<1 | -1>(1);
   const [previewRatio, setPreviewRatio] = useState(DEFAULT_PREVIEW_RATIO);
   const prefersReducedMotion = useReducedMotion();
   const preloadTokenRef = useRef(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const pubCarouselRef = useRef<HTMLDivElement>(null);
+  const pubAutoplayPausedRef = useRef(false);
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
   const previewTriggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -431,13 +443,86 @@ export function VtxEventsSection({ config, lang }: Props) {
     };
   }, [eventItems.length, showSkeleton, updateScrollButtons]);
 
+  const updatePubScrollButtons = useCallback(() => {
+    const el = pubCarouselRef.current;
+    if (!el) return;
+    setCanScrollLeftPub(el.scrollLeft > 2);
+    setCanScrollRightPub(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  const scrollPubCarousel = useCallback((direction: "prev" | "next") => {
+    const el = pubCarouselRef.current;
+    if (!el) return;
+    const amount = direction === "next" ? el.clientWidth : -el.clientWidth;
+    el.scrollBy({ left: amount, behavior: "smooth" });
+    window.setTimeout(updatePubScrollButtons, 360);
+  }, [updatePubScrollButtons]);
+
+  useEffect(() => {
+    if (showSkeleton) return;
+    const el = pubCarouselRef.current;
+    if (!el) return;
+
+    updatePubScrollButtons();
+    const resizeObserver = new ResizeObserver(updatePubScrollButtons);
+    resizeObserver.observe(el);
+    window.addEventListener("resize", updatePubScrollButtons);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updatePubScrollButtons);
+    };
+  }, [publicationItems.length, showSkeleton, updatePubScrollButtons]);
+
+  useEffect(() => {
+    if (showSkeleton || prefersReducedMotion || publicationItems.length <= 1) return;
+    const el = pubCarouselRef.current;
+    if (!el) return;
+
+    const intervalId = window.setInterval(() => {
+      if (pubAutoplayPausedRef.current) return;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2;
+      if (atEnd) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: el.clientWidth, behavior: "smooth" });
+      }
+    }, 4500);
+
+    return () => window.clearInterval(intervalId);
+  }, [publicationItems.length, showSkeleton, prefersReducedMotion]);
+
+  const preloadNeighborPreviews = useCallback((index: number) => {
+    if (publicationItems.length <= 1) return;
+    [1, -1].forEach((delta) => {
+      const neighborIndex = (index + delta + publicationItems.length) % publicationItems.length;
+      const neighborUrl = getZoomImageUrl(coverOf(publicationItems[neighborIndex]));
+      if (neighborUrl) void preloadImage(neighborUrl);
+    });
+  }, [publicationItems]);
+
   const openImagePreview = useCallback((preview: ImagePreview, trigger: HTMLButtonElement) => {
     previewTriggerRef.current = trigger;
     setPreviewRatio(DEFAULT_PREVIEW_RATIO);
     setImagePreview(preview);
-  }, []);
+    preloadNeighborPreviews(preview.index);
+  }, [preloadNeighborPreviews]);
 
   const closeImagePreview = useCallback(() => setImagePreview(null), []);
+
+  const navigatePreview = useCallback((direction: "prev" | "next") => {
+    setPreviewDirection(direction === "next" ? 1 : -1);
+    setImagePreview((current) => {
+      if (!current || publicationItems.length === 0) return current;
+      const delta = direction === "next" ? 1 : -1;
+      const newIndex = (current.index + delta + publicationItems.length) % publicationItems.length;
+      const item = publicationItems[newIndex];
+      const zoomUrl = getZoomImageUrl(coverOf(item));
+      if (!zoomUrl) return current;
+      preloadNeighborPreviews(newIndex);
+      return { src: zoomUrl, alt: item.image_alt || item.title, index: newIndex };
+    });
+  }, [publicationItems]);
 
   useEffect(() => {
     if (!imagePreview) return;
@@ -446,6 +531,8 @@ export function VtxEventsSection({ config, lang }: Props) {
     const focusFrame = window.requestAnimationFrame(() => lightboxCloseRef.current?.focus());
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeImagePreview();
+      if (event.key === "ArrowRight") navigatePreview("next");
+      if (event.key === "ArrowLeft") navigatePreview("prev");
       if (event.key === "Tab") {
         event.preventDefault();
         lightboxCloseRef.current?.focus();
@@ -459,7 +546,7 @@ export function VtxEventsSection({ config, lang }: Props) {
       document.body.style.overflow = previousOverflow;
       previewTriggerRef.current?.focus();
     };
-  }, [closeImagePreview, imagePreview]);
+  }, [closeImagePreview, imagePreview, navigatePreview]);
 
   if (!config.enabled) return null;
 
@@ -544,17 +631,50 @@ export function VtxEventsSection({ config, lang }: Props) {
                 <p className="mt-7 max-w-[620px] font-sans text-[13px] leading-[1.8] text-ivory/62">{config.publications.description[lang]}</p>
               </Reveal>
 
+              {!showSkeleton && publicationItems.length > 0 && (
+                <div className="absolute right-0 top-0 flex items-center gap-1.5 max-[640px]:static max-[640px]:mt-8 max-[640px]:mb-0 max-[640px]:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => scrollPubCarousel("prev")}
+                    disabled={!canScrollLeftPub}
+                    className="grid size-8 place-items-center rounded-full border border-gold-light/30 bg-transparent text-ivory/70 transition-all duration-200 hover:border-gold-light hover:text-gold-light disabled:cursor-not-allowed disabled:opacity-30"
+                    aria-label={lang === "it" ? "Pubblicazioni precedenti" : "Previous publications"}
+                  >
+                    <ChevronLeft size={13} strokeWidth={1.5} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollPubCarousel("next")}
+                    disabled={!canScrollRightPub}
+                    className="grid size-8 place-items-center rounded-full border border-gold-light/30 bg-transparent text-ivory/70 transition-all duration-200 hover:border-gold-light hover:text-gold-light disabled:cursor-not-allowed disabled:opacity-30"
+                    aria-label={lang === "it" ? "Pubblicazioni successive" : "Next publications"}
+                  >
+                    <ChevronRight size={13} strokeWidth={1.5} />
+                  </button>
+                </div>
+              )}
+
               {showSkeleton ? <PublicationCardsSkeleton /> : (
                 <>
                   <motion.div
+                    ref={pubCarouselRef}
+                    onScroll={updatePubScrollButtons}
+                    onMouseEnter={() => { pubAutoplayPausedRef.current = true; }}
+                    onMouseLeave={() => { pubAutoplayPausedRef.current = false; }}
+                    onFocus={() => { pubAutoplayPausedRef.current = true; }}
+                    onBlur={() => { pubAutoplayPausedRef.current = false; }}
+                    onTouchStart={() => { pubAutoplayPausedRef.current = true; }}
+                    onTouchEnd={() => { pubAutoplayPausedRef.current = false; }}
                     variants={PUBLICATION_GRID_VARIANTS}
                     initial="hidden"
                     whileInView="show"
                     viewport={{ once: true, margin: "-80px" }}
-                    className="mt-12 grid grid-cols-4 gap-x-6 gap-y-12 max-[1024px]:grid-cols-2 max-[560px]:grid-cols-1"
+                    className="mt-12 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-6 max-[640px]:mt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    style={{ WebkitOverflowScrolling: "touch" }}
                   >
                     {publicationItems.map((item, index) => <PublicationCard key={item.id} item={item} index={index} lang={lang} onPreview={openImagePreview} />)}
                   </motion.div>
+
                   <ScrollCue lang={lang} targetId="contact" reduced={Boolean(prefersReducedMotion)} />
                 </>
               )}
@@ -574,6 +694,26 @@ export function VtxEventsSection({ config, lang }: Props) {
           onMouseDown={(event) => { if (event.target === event.currentTarget) closeImagePreview(); }}
           className="fixed inset-0 z-[1600] grid place-items-center bg-warm-black/92 p-4 backdrop-blur-md max-[640px]:p-2"
         >
+          {publicationItems.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => navigatePreview("prev")}
+                className="absolute left-2 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-full border border-warm-white/35 bg-warm-black/65 text-warm-white backdrop-blur-sm transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-light max-[640px]:left-1 max-[640px]:size-10"
+                aria-label={lang === "it" ? "Copertina precedente" : "Previous cover"}
+              >
+                <ChevronLeft size={22} strokeWidth={1.6} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => navigatePreview("next")}
+                className="absolute right-2 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-full border border-warm-white/35 bg-warm-black/65 text-warm-white backdrop-blur-sm transition-colors hover:border-gold-light hover:text-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-light max-[640px]:right-1 max-[640px]:size-10"
+                aria-label={lang === "it" ? "Copertina successiva" : "Next cover"}
+              >
+                <ChevronRight size={22} strokeWidth={1.6} aria-hidden="true" />
+              </button>
+            </>
+          )}
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -583,19 +723,36 @@ export function VtxEventsSection({ config, lang }: Props) {
             }}
             className="relative overflow-hidden border border-warm-white/20 bg-warm-black shadow-[0_30px_100px_rgba(0,0,0,0.55)]"
           >
-            <Image
-              src={imagePreview.src}
-              alt={imagePreview.alt}
-              fill
-              sizes="(max-width: 980px) 92vw, 900px"
-              quality={95}
-              className="object-contain"
-              unoptimized={shouldBypassNextOptimization(imagePreview.src)}
-              onLoad={(event) => {
-                const { naturalWidth, naturalHeight } = event.currentTarget;
-                if (naturalWidth > 0 && naturalHeight > 0) setPreviewRatio(naturalWidth / naturalHeight);
-              }}
-            />
+            <AnimatePresence mode="wait" custom={previewDirection} initial={false}>
+              <motion.div
+                key={imagePreview.src}
+                custom={previewDirection}
+                variants={{
+                  enter: (dir: number) => ({ opacity: 0, x: prefersReducedMotion ? 0 : dir * 36 }),
+                  center: { opacity: 1, x: 0 },
+                  exit: (dir: number) => ({ opacity: 0, x: prefersReducedMotion ? 0 : dir * -36 }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.32, ease: [0.2, 0.7, 0.2, 1] }}
+                className="absolute inset-0"
+              >
+                <Image
+                  src={imagePreview.src}
+                  alt={imagePreview.alt}
+                  fill
+                  sizes="(max-width: 980px) 92vw, 900px"
+                  quality={95}
+                  className="object-contain"
+                  unoptimized={shouldBypassNextOptimization(imagePreview.src)}
+                  onLoad={(event) => {
+                    const { naturalWidth, naturalHeight } = event.currentTarget;
+                    if (naturalWidth > 0 && naturalHeight > 0) setPreviewRatio(naturalWidth / naturalHeight);
+                  }}
+                />
+              </motion.div>
+            </AnimatePresence>
             <button
               ref={lightboxCloseRef}
               type="button"
