@@ -105,7 +105,7 @@ export const en = {
   },
   footer: {
     claim: "Handcrafted jewellery since 1989. RGR turns emotions into jewellery.",
-    colVisit: "Atelier",
+    colVisit: "Visit Us",
     addrTitle: "Via Pietro Calamandrei, 253 A/11",
     addrLines: [
       "52100 Arezzo - Italy",
@@ -127,9 +127,9 @@ export const en = {
       phone: "Phone",
       message: "Message",
       messagePlaceholder: "Your message",
-      privacyBefore: "I have read",
+      privacyBefore: "I confirm that I have read",
       privacyLink: "the privacy notice",
-      privacyAfter: "regarding the processing of personal data.",
+      privacyAfter: ".",
       privacyHref: "/privacy-policy",
       submit: "Send",
       sending: "Sending…",
@@ -147,7 +147,7 @@ export const en = {
     ] as [string, string][],
     colLegalLinks: "Legal",
     legal: [
-      ["Privacy Policy", "#"],
+      ["Privacy Policy", "/privacy-policy"],
       ["Cookie Policy", "#"],
       ["Private Area", "#admin"],
       ["Credits", "#"],

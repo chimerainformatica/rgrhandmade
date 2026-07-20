@@ -1,7 +1,8 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
 import { Arrow } from "@/components/Brand";
 import { GoldLine } from "@/components/ui/GoldLine";
 import { site } from "@/lib/content";
@@ -35,21 +36,69 @@ type FooterContactFormProps = {
   imageSrc: string;
 };
 
+type TurnstileApi = {
+  render: (container: HTMLElement, options: {
+    sitekey: string;
+    theme: "dark";
+    callback: (token: string) => void;
+    "expired-callback": () => void;
+    "error-callback": () => void;
+  }) => string;
+  reset: (widgetId?: string) => void;
+  remove: (widgetId: string) => void;
+};
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi;
+  }
+}
+
 const fieldClass =
   "min-h-12 w-full border border-white/12 bg-[#201b17] px-4 font-sans text-[14px] text-ivory outline-none transition-colors duration-200 placeholder:text-ivory/30 focus:border-gold/80 focus:bg-[#262018]";
 const labelClass = "grid gap-2";
 const labelTextClass =
   "font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-light";
 export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const startedAt = useRef(Date.now());
+  const turnstileContainer = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
   const [lastDraft, setLastDraft] = useState<FormData | null>(null);
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileReady || !turnstileContainer.current || !window.turnstile) return;
+
+    const widgetId = window.turnstile.render(turnstileContainer.current, {
+      sitekey: turnstileSiteKey,
+      theme: "dark",
+      callback: setTurnstileToken,
+      "expired-callback": () => setTurnstileToken(""),
+      "error-callback": () => setTurnstileToken(""),
+    });
+    turnstileWidgetId.current = widgetId;
+
+    return () => {
+      window.turnstile?.remove(widgetId);
+      turnstileWidgetId.current = null;
+    };
+  }, [turnstileReady, turnstileSiteKey]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
+
+    if (turnstileSiteKey && !turnstileToken) {
+      setStatus("error");
+      setError("Completa la verifica anti-spam prima di inviare il messaggio.");
+      return;
+    }
+
     setStatus("sending");
     setError("");
     setLastDraft(data);
@@ -66,7 +115,8 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
           message: data.get("messaggio"),
           privacy: data.get("privacy"),
           website: data.get("website"),
-          startedAt: Number(data.get("startedAt"))
+          startedAt: Number(data.get("startedAt")),
+          turnstileToken,
         })
       });
 
@@ -78,6 +128,8 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
       form.reset();
       startedAt.current = Date.now();
       setLastDraft(null);
+      setTurnstileToken("");
+      if (turnstileWidgetId.current) window.turnstile?.reset(turnstileWidgetId.current);
       setStatus("sent");
     } catch (submitError) {
       setStatus("error");
@@ -159,6 +211,13 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
           </p>
 
           <form onSubmit={handleSubmit} className="grid gap-4">
+            {turnstileSiteKey && (
+              <Script
+                src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+                strategy="afterInteractive"
+                onLoad={() => setTurnstileReady(true)}
+              />
+            )}
             <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
             <input type="hidden" name="startedAt" value={startedAt.current} />
             <div className="grid grid-cols-2 gap-4 max-[640px]:grid-cols-1">
@@ -216,10 +275,14 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
               </span>
             </label>
 
+            {turnstileSiteKey && (
+              <div className="min-h-[65px]" ref={turnstileContainer} aria-label="Verifica anti-spam" />
+            )}
+
             <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">
               <button
                 type="submit"
-                disabled={status === "sending"}
+                disabled={status === "sending" || Boolean(turnstileSiteKey && !turnstileToken)}
                 className="inline-flex min-h-11 items-center justify-center gap-3 rounded-full border border-gold bg-gold px-7 py-3.5 font-sans text-[12px] font-semibold uppercase tracking-[0.16em] text-warm-black transition-all duration-300 hover:-translate-y-px hover:border-gold-light hover:bg-gold-light max-[420px]:w-full"
               >
                 {status === "sending" ? copy.sending : copy.submit} <Arrow size={12} />

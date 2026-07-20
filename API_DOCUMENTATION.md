@@ -123,12 +123,7 @@ Verifica lo status del backend Vitrix (diagnostica).
   "vitrix": true,
   "supabaseConfigured": true,
   "serviceRoleConfigured": true,
-  "license": {
-    "siteId": "rgrhandmade",
-    "status": "active",
-    "plan": "pro",
-    "enabledModules": ["dashboard", "collections", "press", "media", "settings"]
-  }
+  "mode": "supabase"
 }
 ```
 

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 import type { Lang } from "@/lib/content";
 import { useNews, type NewsRow } from "@/lib/useSupabase";
@@ -168,6 +168,20 @@ type ImagePreview = {
   alt: string;
 };
 
+/**
+ * Cascata d'ingresso delle copertine pubblicazioni. Orchestrata dal contenitore
+ * così parte in modo coordinato quando la griglia entra in viewport, anche se le
+ * card montano già visibili (dopo il preload delle immagini).
+ */
+const PUBLICATION_GRID_VARIANTS = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.06 } },
+} as const;
+const PUBLICATION_CARD_VARIANTS = {
+  hidden: { opacity: 0, y: 36 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 0.84, 0.34, 1] } },
+} as const;
+
 /** Rapporto usato finché non si conoscono le dimensioni reali della copertina. */
 const DEFAULT_PREVIEW_RATIO = 3 / 4;
 const PREVIEW_MAX_HEIGHT = "min(90vh, 1100px)";
@@ -257,19 +271,47 @@ function PublicationCardsSkeleton() {
   );
 }
 
+/** Freccia discreta a fondo sezione che invita a proseguire lo scroll. */
+function ScrollCue({ lang, targetId, reduced }: { lang: Lang; targetId: string; reduced: boolean }) {
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    event.preventDefault();
+    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  };
+
+  return (
+    <div className="mt-20 flex justify-center max-[640px]:mt-14">
+      <motion.a
+        href={`#${targetId}`}
+        onClick={handleClick}
+        aria-label={lang === "it" ? "Continua a scorrere" : "Keep scrolling"}
+        className="group inline-flex flex-col items-center gap-2.5 rounded-full px-4 py-2 text-gold-light/55 transition-colors duration-300 hover:text-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-light/60"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ delay: 0.25, duration: 0.9, ease: "easeOut" }}
+      >
+        <span className="font-sans text-[9px] font-semibold uppercase tracking-[0.3em]">{lang === "it" ? "Continua" : "Scroll"}</span>
+        <motion.span
+          aria-hidden="true"
+          animate={reduced ? undefined : { y: [0, 7, 0] }}
+          transition={reduced ? undefined : { duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ChevronDown size={22} strokeWidth={1.4} />
+        </motion.span>
+      </motion.a>
+    </div>
+  );
+}
+
 function PublicationCard({ item, index, lang, onPreview }: { item: NewsRow; index: number; lang: Lang; onPreview: (preview: ImagePreview, trigger: HTMLButtonElement) => void }) {
   const zoomUrl = getZoomImageUrl(coverOf(item));
   const alt = item.image_alt || item.title;
   const edition = [publicationMonthOf(item, lang), dateOf(item)].filter(Boolean).join(" · ");
 
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ delay: Math.min(index * 0.055, 0.22), duration: 0.5 }}
-      className="group"
-    >
+    <motion.article variants={PUBLICATION_CARD_VARIANTS} className="group">
       <button
         type="button"
         disabled={!zoomUrl}
@@ -313,6 +355,7 @@ export function VtxEventsSection({ config, lang }: Props) {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [imagePreview, setImagePreview] = useState<ImagePreview | null>(null);
   const [previewRatio, setPreviewRatio] = useState(DEFAULT_PREVIEW_RATIO);
+  const prefersReducedMotion = useReducedMotion();
   const preloadTokenRef = useRef(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const lightboxCloseRef = useRef<HTMLButtonElement>(null);
@@ -502,9 +545,18 @@ export function VtxEventsSection({ config, lang }: Props) {
               </Reveal>
 
               {showSkeleton ? <PublicationCardsSkeleton /> : (
-                <div className="mt-12 grid grid-cols-4 gap-x-6 gap-y-12 max-[1024px]:grid-cols-2 max-[560px]:grid-cols-1">
-                  {publicationItems.map((item, index) => <PublicationCard key={item.id} item={item} index={index} lang={lang} onPreview={openImagePreview} />)}
-                </div>
+                <>
+                  <motion.div
+                    variants={PUBLICATION_GRID_VARIANTS}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true, margin: "-80px" }}
+                    className="mt-12 grid grid-cols-4 gap-x-6 gap-y-12 max-[1024px]:grid-cols-2 max-[560px]:grid-cols-1"
+                  >
+                    {publicationItems.map((item, index) => <PublicationCard key={item.id} item={item} index={index} lang={lang} onPreview={openImagePreview} />)}
+                  </motion.div>
+                  <ScrollCue lang={lang} targetId="contact" reduced={Boolean(prefersReducedMotion)} />
+                </>
               )}
             </div>
           </div>

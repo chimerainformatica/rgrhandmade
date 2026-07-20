@@ -276,7 +276,6 @@ button {
 }
 
 .admin-hero-panel,
-.admin-license-blocked,
 .admin-placeholder,
 .admin-maintenance-panel,
 .admin-favicon-panel,
@@ -285,15 +284,13 @@ button {
   padding: 24px;
 }
 
-.admin-hero-panel svg,
-.admin-license-blocked > svg {
+.admin-hero-panel svg {
   color: var(--color-vt-brand);
 }
 
 .admin-hero-panel p,
 .admin-placeholder p,
-.admin-maintenance-panel p,
-.admin-license-blocked p {
+.admin-maintenance-panel p {
   max-width: 680px;
   margin: 14px 0 0;
   color: #536575;
@@ -434,8 +431,7 @@ button {
   cursor: not-allowed;
 }
 
-.admin-status,
-.license-error {
+.admin-status {
   margin: 0;
   padding: 10px 12px;
   border-radius: 8px;
@@ -833,15 +829,13 @@ button {
   backdrop-filter: blur(18px);
 }
 
-.admin-hero-panel svg,
-.admin-license-blocked > svg {
+.admin-hero-panel svg {
   color: var(--vx-violet);
 }
 
 .admin-hero-panel p,
 .admin-placeholder p,
 .admin-maintenance-panel p,
-.admin-license-blocked p,
 .login-help {
   color: var(--vx-text-secondary);
 }
@@ -891,7 +885,6 @@ button {
 }
 
 .admin-status,
-.license-error,
 .admin-log-toolbar span {
   background: var(--vx-primary-soft);
   color: var(--vx-primary);
