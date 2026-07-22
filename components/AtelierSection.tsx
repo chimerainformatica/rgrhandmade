@@ -33,7 +33,7 @@ export function AtelierSection({ copy }: AtelierSectionProps) {
         <Reveal className="relative min-h-120 max-lg:min-h-80 max-[640px]:aspect-video max-[640px]:h-auto">
           <div className="absolute inset-0 overflow-hidden">
             <video
-              src={asset("bg-atelier-video.webm")}
+              src={asset("hero-background.webm")}
               poster={asset("hero-2.png")}
               playsInline
               autoPlay
