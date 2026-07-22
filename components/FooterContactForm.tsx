@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { Arrow } from "@/components/Brand";
 import { GoldLine } from "@/components/ui/GoldLine";
+import { SuccessDialog } from "@/components/SuccessDialog";
 import { site } from "@/lib/content";
 import { openEmailDraft } from "@/lib/mailto";
 
@@ -142,7 +143,14 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
   }
 
   return (
-    <div className="relative overflow-hidden border border-gold/24 bg-[#171411] shadow-[0_34px_120px_rgba(0,0,0,0.32)]">
+    <>
+      <SuccessDialog
+        isOpen={status === "sent"}
+        title={copy.success.split(".")[0] || "Email inviata!"}
+        message={copy.success || "Il tuo messaggio è stato inviato con successo. Ti contatteremo presto."}
+        onClose={() => setStatus("idle")}
+      />
+      <div className="relative overflow-hidden border border-gold/24 bg-[#171411] shadow-[0_34px_120px_rgba(0,0,0,0.32)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/80 to-transparent" />
       <div className="pointer-events-none absolute inset-y-12 left-[42%] w-px bg-gradient-to-b from-transparent via-gold/18 to-transparent max-lg:hidden" />
 
@@ -303,6 +311,6 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
           </form>
         </div>
       </div>
-    </div>
+    </>
   );
 }
