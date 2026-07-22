@@ -107,8 +107,8 @@ export function HomePage({
         {/* Hero background — video */}
         <video
           className="absolute inset-0 z-0 w-full h-full object-cover object-center"
-          src={asset("hero.webm")}
-          poster={asset("hero-1.png")}
+          src={asset("hero-background.webm")}
+          poster={asset("hero-background_001.webp")}
           preload="metadata"
           autoPlay
           muted
