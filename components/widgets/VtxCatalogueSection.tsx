@@ -34,9 +34,6 @@ const ALL_LABEL = { it: "Tutte", en: "All" };
 /** Legacy RGR category used only as fallback for data predating Collection standardization. */
 const PARURE_CATEGORY = "Parure";
 
-/** Zoom scale factor for the magnifying lens on the main preview image. */
-const ZOOM_SCALE = 2.1;
-
 interface Props {
   config: VtxCatalogueConfig;
   lang: Lang;
@@ -565,46 +562,28 @@ function Ornament() {
 }
 
 /**
- * Immagine principale dell'anteprima con effetto "lente di ingrandimento".
- * Al passaggio del mouse l'immagine viene ingrandita (ZOOM_SCALE) e il punto
- * di origine della trasformazione segue il cursore -> zoom fluido sul dettaglio.
- * Su touch / fuori hover torna allo stato 1:1.
+ * Immagine principale dell'anteprima, sempre resa 1:1.
+ * Nessun ingrandimento al passaggio del mouse: la foto resta statica.
  */
-function ZoomImage({ card }: { card: CollectionRow }) {
+function PreviewImage({ card }: { card: CollectionRow }) {
   const src = getZoomImageUrl(card.img_path);
-  const [zooming, setZooming] = useState(false);
-  const [origin, setOrigin] = useState("center");
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
-
-  const handleMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-    setOrigin(`${x}% ${y}%`);
-  };
 
   if (!src || failed) {
     return <div className="h-full w-full bg-[#d5cfc8]" aria-hidden="true" />;
   }
 
   return (
-    <div
-      className="relative h-full w-full cursor-zoom-in overflow-hidden"
-      onMouseEnter={() => setZooming(true)}
-      onMouseLeave={() => setZooming(false)}
-      onMouseMove={handleMove}
-    >
+    <div className="relative h-full w-full overflow-hidden">
       {!loaded && <div className="absolute inset-0 z-10 skeleton" />}
       <Image
         src={src}
         alt={card.title}
         fill
-        className="select-none object-contain transition-[opacity,transform] duration-300 ease-out will-change-transform"
+        className="select-none object-contain transition-opacity duration-300 ease-out"
         style={{
           opacity: loaded ? 1 : 0,
-          transform: zooming ? `scale(${ZOOM_SCALE})` : "scale(1)",
-          transformOrigin: origin,
           objectPosition: card.img_position || "center",
         }}
         sizes="(max-width: 520px) 100vw, (max-width: 860px) 520px, 560px"
@@ -859,7 +838,7 @@ function PreviewModal({
               {imageError ? (
                 <div className="h-full w-full bg-white" aria-hidden="true" />
               ) : (
-                <ZoomImage key={view.id} card={view} />
+                <PreviewImage key={view.id} card={view} />
               )}
             </div>
 

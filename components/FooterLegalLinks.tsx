@@ -10,7 +10,7 @@ type FooterLegalLinksProps = {
 
 /**
  * Sezione conservata separatamente per una futura riattivazione.
- * Include privacy, cookie, area riservata e credits.
+ * Include privacy, cookie e area riservata. I credits stanno solo in SiteFooter.
  */
 export function FooterLegalLinks({ title, links }: FooterLegalLinksProps) {
   return (
@@ -28,7 +28,7 @@ export function FooterLegalLinks({ title, links }: FooterLegalLinksProps) {
                 event.preventDefault();
                 window.dispatchEvent(new Event(OPEN_PRIVACY_SETTINGS_EVENT));
               } : undefined}
-              className="group flex min-h-11 items-center justify-between gap-5 font-serif text-[15px] text-ivory/72 transition-colors hover:text-gold-light"
+              className="group flex min-h-11 items-center justify-between gap-5 font-sans text-[14px] text-ivory/78 transition-colors hover:text-gold-light"
             >
               <span>{label}</span>
               <ChevronRight className="text-gold transition-transform group-hover:translate-x-1" size={15} strokeWidth={1.4} aria-hidden="true" />
@@ -36,7 +36,6 @@ export function FooterLegalLinks({ title, links }: FooterLegalLinksProps) {
           </li>
         ))}
       </ul>
-      <p className="mt-7 font-serif text-[12px] text-ivory/42">Sito web creato da Chimera Informatica</p>
     </div>
   );
 }

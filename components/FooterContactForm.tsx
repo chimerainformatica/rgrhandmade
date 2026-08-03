@@ -311,6 +311,7 @@ export function FooterContactForm({ copy, imageSrc }: FooterContactFormProps) {
           </form>
         </div>
       </div>
+      </div>
     </>
   );
 }
