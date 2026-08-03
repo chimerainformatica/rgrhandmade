@@ -87,7 +87,7 @@ export function SuccessDialog({
                 <motion.div
                   initial={{ width: "100%" }}
                   animate={{ width: "0%" }}
-                  transition={{ duration: autoCloseDuration / 1000, linear: true }}
+                  transition={{ duration: autoCloseDuration / 1000, ease: "linear" }}
                   className="h-full bg-gradient-to-r from-gold to-gold-light"
                 />
               </div>

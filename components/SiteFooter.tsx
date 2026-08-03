@@ -66,7 +66,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
             {/* Brand */}
             <div className="pr-12 max-[1100px]:pr-0">
               <BrandLogo className="mb-8 h-[82px] max-[640px]:h-[66px]" />
-              <p className="max-w-[330px] font-serif text-[16px] leading-7 text-ivory/70 max-[640px]:text-[15px]">
+              <p className="max-w-[330px] font-sans text-[14px] font-light leading-[1.8] text-ivory/75 max-[640px]:text-[13.5px]">
                 {t.footer.claim.split(". ").map((line, index, lines) => (
                   <span key={line} className="block">
                     {line}{index < lines.length - 1 ? "." : ""}
@@ -92,11 +92,11 @@ export function SiteFooter({ lang }: SiteFooterProps) {
               <FooterHeading>{t.footer.colVisit}</FooterHeading>
               <ul className="mt-7 grid list-none gap-2 p-0">
                 <li>
-                  <p className="m-0 font-serif text-[16px] leading-7 text-ivory/78 max-[480px]:text-[15px]">{t.footer.addrTitle}</p>
+                  <p className="m-0 font-sans text-[14px] font-medium leading-[1.7] text-ivory/90 max-[480px]:text-[13.5px]">{t.footer.addrTitle}</p>
                 </li>
                 {t.footer.addrLines.map((line) => (
                   <li key={line}>
-                    <p className="m-0 font-serif text-[16px] leading-7 text-ivory/58 max-[480px]:text-[15px]">
+                    <p className="m-0 font-sans text-[14px] font-light leading-[1.7] text-ivory/72 max-[480px]:text-[13.5px]">
                       {line}
                     </p>
                   </li>
@@ -124,7 +124,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                     <a
                       href={label === "Email" ? `mailto:${value}` : `tel:${value.replace(/[^0-9+]/g, "")}`}
                       title={`${label} - RGR Handmade`}
-                      className="group flex min-h-12 items-center gap-4 font-serif text-[15px] text-ivory/76 transition-colors hover:text-gold-light"
+                      className="group flex min-h-12 items-center gap-4 break-all font-sans text-[14.5px] font-medium tracking-[0.01em] text-ivory/92 transition-colors hover:text-gold-light max-[480px]:text-[13.5px]"
                     >
                       <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/55 text-gold transition-colors group-hover:bg-gold group-hover:text-warm-black">
                         {label === "Email" ? <Mail size={17} strokeWidth={1.4} aria-hidden="true" /> : <Phone size={17} strokeWidth={1.4} aria-hidden="true" />}
@@ -145,7 +145,7 @@ export function SiteFooter({ lang }: SiteFooterProps) {
                     <a
                       href={href}
                       title={`${label} - RGR Handmade`}
-                      className="group flex min-h-11 items-center justify-between gap-5 font-serif text-[16px] text-ivory/72 transition-colors duration-200 hover:text-gold-light"
+                      className="group flex min-h-11 items-center justify-between gap-5 font-sans text-[14px] text-ivory/78 transition-colors duration-200 hover:text-gold-light"
                     >
                       <span>{label}</span>
                       <ChevronRight className="text-gold transition-transform group-hover:translate-x-1" size={15} strokeWidth={1.4} aria-hidden="true" />
@@ -160,12 +160,12 @@ export function SiteFooter({ lang }: SiteFooterProps) {
 
           <div className="relative mt-16 border-t border-gold/55 pt-8 max-[640px]:mt-12">
             <span className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-gold bg-[#0d0b09]" aria-hidden="true" />
-            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 font-serif text-[12px] tracking-[0.03em] text-ivory/48 max-[700px]:flex-col max-[700px]:items-start">
+            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 font-sans text-[11.5px] font-light leading-[1.6] tracking-[0.02em] text-ivory/62 max-[700px]:flex-col max-[700px]:items-start">
               <span>&copy; 2026 R.G.R. DI GALLASTRONI ROSSELLA &amp; C. S.N.C. &mdash; Arezzo, Italia</span>
               <span>P.IVA 01358780516</span>
               <span>Handmade &middot; Made in Italy</span>
             </div>
-            <div className="mt-6 text-center font-sans text-[10px] uppercase tracking-[0.22em] text-ivory/35">
+            <div className="mt-6 text-center font-sans text-[10px] uppercase tracking-[0.22em] text-ivory/55">
               Created by{" "}
               <a
                 href="https://chimerainformatica.com"
