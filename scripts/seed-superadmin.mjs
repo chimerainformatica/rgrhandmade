@@ -49,7 +49,10 @@ async function main() {
   }
 
   if (!password) {
-    throw new Error("Missing VITRIX_SUPERADMIN_PASSWORD.");
+    throw new Error(
+      "Missing VITRIX_SUPERADMIN_PASSWORD. Le credenziali non stanno piu nei file .env: passale inline\n" +
+      "  VITRIX_SUPERADMIN_EMAIL=... VITRIX_SUPERADMIN_PASSWORD=... npm run seed:superadmin"
+    );
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
