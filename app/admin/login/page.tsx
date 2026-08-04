@@ -19,9 +19,6 @@ const queryErrorMessages: Record<string, string> = {
 };
 
 const isDev = process.env.NODE_ENV === "development";
-const devAdmin = isDev
-  ? { email: process.env.VITRIX_SUPERADMIN_EMAIL ?? "", password: process.env.VITRIX_SUPERADMIN_PASSWORD ?? "" }
-  : null;
 const devDemo = isDev
   ? { email: process.env.DEV_DEMO_EMAIL, password: process.env.DEV_DEMO_PASSWORD }
   : null;
@@ -201,8 +198,6 @@ export default async function AdminLoginPage({
           next={params.next ?? "/admin"}
           successMessage={success}
           queryError={queryError}
-          defaultEmail={devAdmin?.email}
-          defaultPassword={devAdmin?.password}
           devDemo={devDemo?.email && devDemo.password ? { email: devDemo.email, password: devDemo.password } : null}
         />
       </Box>

@@ -34,6 +34,9 @@ const ALL_LABEL = { it: "Tutte", en: "All" };
 /** Legacy RGR category used only as fallback for data predating Collection standardization. */
 const PARURE_CATEGORY = "Parure";
 
+/** Fattore di ingrandimento della lente sull'immagine principale dell'anteprima. */
+const ZOOM_SCALE = 2.1;
+
 interface Props {
   config: VtxCatalogueConfig;
   lang: Lang;
@@ -562,28 +565,50 @@ function Ornament() {
 }
 
 /**
- * Immagine principale dell'anteprima, sempre resa 1:1.
- * Nessun ingrandimento al passaggio del mouse: la foto resta statica.
+ * Immagine principale dell'anteprima.
+ * Con `zoomEnabled` attiva la lente di ingrandimento: al passaggio del mouse
+ * l'immagine viene ingrandita (ZOOM_SCALE) e l'origine della trasformazione
+ * segue il cursore. Sulla vista di default (lo scatto con la modella) lo zoom
+ * resta disattivato: li serve vedere il gioiello indossato, non il dettaglio.
  */
-function PreviewImage({ card }: { card: CollectionRow }) {
+function PreviewImage({ card, zoomEnabled = false }: { card: CollectionRow; zoomEnabled?: boolean }) {
   const src = getZoomImageUrl(card.img_path);
+  const [zooming, setZooming] = useState(false);
+  const [origin, setOrigin] = useState("center");
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  const handleMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!zoomEnabled) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    setOrigin(`${x}% ${y}%`);
+  };
 
   if (!src || failed) {
     return <div className="h-full w-full bg-[#d5cfc8]" aria-hidden="true" />;
   }
 
+  const isZooming = zoomEnabled && zooming;
+
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div
+      className={`relative h-full w-full overflow-hidden ${zoomEnabled ? "cursor-zoom-in" : ""}`}
+      onMouseEnter={zoomEnabled ? () => setZooming(true) : undefined}
+      onMouseLeave={zoomEnabled ? () => setZooming(false) : undefined}
+      onMouseMove={zoomEnabled ? handleMove : undefined}
+    >
       {!loaded && <div className="absolute inset-0 z-10 skeleton" />}
       <Image
         src={src}
         alt={card.title}
         fill
-        className="select-none object-contain transition-opacity duration-300 ease-out"
+        className="select-none object-contain transition-[opacity,transform] duration-300 ease-out will-change-transform"
         style={{
           opacity: loaded ? 1 : 0,
+          transform: isZooming ? `scale(${ZOOM_SCALE})` : "scale(1)",
+          transformOrigin: origin,
           objectPosition: card.img_position || "center",
         }}
         sizes="(max-width: 520px) 100vw, (max-width: 860px) 520px, 560px"
@@ -710,6 +735,12 @@ function PreviewModal({
   }, [card, initialViewId, views]);
 
   const view = active ?? card;
+  // Lo zoom e disattivato solo sulla copertina di una collection (lo scatto con
+  // la modella): li serve vedere il gioiello indossato, non il dettaglio.
+  // Resta attivo sui gioielli scelti dai thumbnail e sugli articoli singoli,
+  // dove l'immagine principale e gia il gioiello.
+  const isDefaultCollectionView = Boolean(card && view && view.id === card.id && isCollection(card));
+  const zoomEnabled = !isDefaultCollectionView;
 
   useEffect(() => {
     if (!card) return;
@@ -838,7 +869,7 @@ function PreviewModal({
               {imageError ? (
                 <div className="h-full w-full bg-white" aria-hidden="true" />
               ) : (
-                <PreviewImage key={view.id} card={view} />
+                <PreviewImage key={view.id} card={view} zoomEnabled={zoomEnabled} />
               )}
             </div>
 

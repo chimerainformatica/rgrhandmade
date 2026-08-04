@@ -12,8 +12,6 @@ type AdminLoginFormProps = {
   successMessage?: string | null;
   /** Errore arrivato via querystring (es. redirect da requireVitrixAccess). */
   queryError?: string | null;
-  defaultEmail?: string;
-  defaultPassword?: string;
   devDemo?: { email: string; password: string } | null;
 };
 
@@ -22,8 +20,6 @@ export function AdminLoginForm({
   next,
   successMessage = null,
   queryError = null,
-  defaultEmail,
-  defaultPassword,
   devDemo = null
 }: AdminLoginFormProps) {
   const [state, formAction, isPending] = useActionState(signIn, initialSignInState);
@@ -96,7 +92,6 @@ export function AdminLoginForm({
         type="email"
         autoComplete="email"
         placeholder="nome@azienda.com"
-        defaultValue={defaultEmail}
         required
         disabled={isPending}
         error={Boolean(error)}
@@ -113,7 +108,6 @@ export function AdminLoginForm({
         type="password"
         autoComplete="current-password"
         placeholder="••••••••"
-        defaultValue={defaultPassword}
         required
         disabled={isPending}
         error={Boolean(error)}
