@@ -4,7 +4,8 @@ import { useActionState, useEffect, useRef } from "react";
 import { Alert, Box, Divider, Link, Stack, TextField, Typography } from "@mui/material";
 import { LoginSubmitButton } from "@/components/admin/LoginSubmitButton";
 import { VitrixLogo } from "@/components/admin/VitrixLogo";
-import { initialSignInState, signIn } from "@/app/admin/login/actions";
+import { signIn } from "@/app/admin/login/actions";
+import { initialSignInState } from "@/app/admin/login/state";
 
 type AdminLoginFormProps = {
   isConfigured: boolean;
