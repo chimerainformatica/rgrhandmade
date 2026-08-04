@@ -3,10 +3,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseConfig } from "@/lib/supabase/config";
+import type { SignInState } from "@/app/admin/login/state";
 
-export type SignInState = { error: string | null };
-
-export const initialSignInState: SignInState = { error: null };
+// NOTA: questo file e "use server", quindi puo esportare SOLO funzioni async.
+// Tipi e costanti stanno in ./state.ts — vedi il commento li.
 
 function safeAdminPath(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return "/admin";
