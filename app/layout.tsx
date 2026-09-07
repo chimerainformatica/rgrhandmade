@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import localFont from "next/font/local";
+import { LegalBlinkProvider } from "@/components/legalblink/LegalBlinkProvider";
 import { getSiteSettings } from "@/lib/vitrix/settings";
 import { initVitrixErrorLogger } from "@/lib/vitrix/logs";
 import "./globals.css";
@@ -69,7 +70,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang="it" className={`${cormorant.variable} ${manrope.variable}`}>
-      <body data-csp-nonce={nonce}>{children}</body>
+      <body data-csp-nonce={nonce}>
+        <LegalBlinkProvider />
+        {children}
+      </body>
     </html>
   );
 }

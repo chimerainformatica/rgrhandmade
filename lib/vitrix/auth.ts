@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { isManagedUserDisabled } from "@/lib/vitrix/users-core";
 
 export type VitrixRole = "superadmin" | "owner" | "admin" | "editor" | "viewer";
 
@@ -25,7 +26,7 @@ export async function getCurrentVitrixUser(): Promise<VitrixUser | null> {
     error
   } = await supabase.auth.getUser();
 
-  if (error || !user?.email) {
+  if (error || !user?.email || isManagedUserDisabled(user.banned_until)) {
     return null;
   }
 

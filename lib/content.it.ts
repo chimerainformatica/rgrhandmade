@@ -149,6 +149,7 @@ export const it = {
     legal: [
       ["Privacy Policy", "/privacy-policy"],
       ["Cookie Policy", "/cookie-policy"],
+      ["Condizioni d'uso", "/condizioni-uso"],
       ["Gestisci cookie", "#cookie-settings"],
       ["Area Riservata", "#admin"],
       ["Credits", "#"],

@@ -1,16 +1,36 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { OPEN_PRIVACY_SETTINGS_EVENT } from "@/lib/privacy/consent";
+import { ManageCookiesButton } from "@/components/legalblink/ManageCookiesButton";
 
 type FooterLegalLinksProps = {
   title: string;
   links: Array<readonly [string, string]>;
 };
 
+const ROW_CLASS =
+  "group flex min-h-11 w-full items-center justify-between gap-5 font-sans text-[14px] text-ivory/78 transition-colors hover:text-gold-light";
+
+function RowContent({ label }: { label: string }) {
+  return (
+    <>
+      <span>{label}</span>
+      <ChevronRight
+        className="text-gold transition-transform group-hover:translate-x-1"
+        size={15}
+        strokeWidth={1.4}
+        aria-hidden="true"
+      />
+    </>
+  );
+}
+
 /**
- * Sezione conservata separatamente per una futura riattivazione.
- * Include privacy, cookie e area riservata. I credits stanno solo in SiteFooter.
+ * Colonna legale del footer: informative, condizioni d'uso, richiesta dati e
+ * gestione cookie. I credits stanno solo in SiteFooter.
+ *
+ * Il filtro delle voci vive in SiteFooter ed e un'enumerazione esplicita:
+ * l'elenco di partenza contiene anche il link all'area riservata.
  */
 export function FooterLegalLinks({ title, links }: FooterLegalLinksProps) {
   return (
@@ -22,17 +42,15 @@ export function FooterLegalLinks({ title, links }: FooterLegalLinksProps) {
       <ul className="mt-6 grid list-none gap-1 p-0">
         {links.map(([label, href]) => (
           <li key={`${label}-${href}`}>
-            <a
-              href={href === "#admin" ? "/admin/login?next=/admin" : href}
-              onClick={href === "#cookie-settings" ? (event) => {
-                event.preventDefault();
-                window.dispatchEvent(new Event(OPEN_PRIVACY_SETTINGS_EVENT));
-              } : undefined}
-              className="group flex min-h-11 items-center justify-between gap-5 font-sans text-[14px] text-ivory/78 transition-colors hover:text-gold-light"
-            >
-              <span>{label}</span>
-              <ChevronRight className="text-gold transition-transform group-hover:translate-x-1" size={15} strokeWidth={1.4} aria-hidden="true" />
-            </a>
+            {href === "#cookie-settings" ? (
+              <ManageCookiesButton label={label} className={ROW_CLASS}>
+                <RowContent label={label} />
+              </ManageCookiesButton>
+            ) : (
+              <a href={href === "#admin" ? "/admin/login?next=/admin" : href} className={ROW_CLASS}>
+                <RowContent label={label} />
+              </a>
+            )}
           </li>
         ))}
       </ul>

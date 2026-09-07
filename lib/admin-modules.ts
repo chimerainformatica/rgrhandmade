@@ -1,7 +1,7 @@
-import { LayoutDashboard, ImageIcon, Newspaper, FileImage, Settings, LayoutTemplate, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, ImageIcon, Newspaper, FileImage, Settings, LayoutTemplate, ShieldCheck, Users } from "lucide-react";
 import type { ComponentType } from "react";
 
-export type AdminModuleId = "dashboard" | "catalogue" | "events" | "media" | "settings" | "widgets" | "privacy";
+export type AdminModuleId = "dashboard" | "catalogue" | "events" | "media" | "settings" | "widgets" | "privacy" | "users";
 
 export type AdminModule = {
   id: AdminModuleId;
@@ -59,6 +59,13 @@ export const adminModules: AdminModule[] = [
     label: "Privacy & Cookie",
     description: "Gestione informative, preferenze cookie e consensi.",
     icon: ShieldCheck,
+    enabled: true
+  },
+  {
+    id: "users",
+    label: "Utenti",
+    description: "Gestione account, ruoli e stato di accesso.",
+    icon: Users,
     enabled: true
   }
 ];
