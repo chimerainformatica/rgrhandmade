@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import Script from "next/script";
 import localFont from "next/font/local";
+import { LegalBlinkProvider } from "@/components/legalblink/LegalBlinkProvider";
 import { getSiteSettings } from "@/lib/vitrix/settings";
 import { initVitrixErrorLogger } from "@/lib/vitrix/logs";
 import "./globals.css";
@@ -71,15 +71,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="it" className={`${cormorant.variable} ${manrope.variable}`}>
       <body data-csp-nonce={nonce}>
-        {/* SPIKE LegalBlink — temporaneo, da rimuovere o sostituire col modulo. */}
-        <Script
-          id="legalblink-loader"
-          src="https://app.legalblink.it/api/scripts/cmp/loader.js"
-          data-license-id="6a9974bb23255e002a9b7962"
-          data-blocking-mode="auto"
-          data-consent-mode="true"
-          strategy="beforeInteractive"
-        />
+        <LegalBlinkProvider />
         {children}
       </body>
     </html>
