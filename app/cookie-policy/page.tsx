@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { LegalPolicyPage } from "@/components/privacy/LegalPolicyPage";
-import { getPublishedPrivacyConfig } from "@/lib/privacy/server";
+import { LegalDocumentPage } from "@/components/legalblink/LegalDocumentPage";
 
 export const metadata: Metadata = {
   title: "Cookie policy",
@@ -9,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CookiePolicyPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
-  const [{ lang }, config] = await Promise.all([searchParams, getPublishedPrivacyConfig()]);
-  return <LegalPolicyPage config={config} lang={lang === "en" ? "en" : "it"} type="cookie" />;
+  const { lang } = await searchParams;
+  const resolved = lang === "en" ? "en" : "it";
+  return <LegalDocumentPage document="cookie" lang={resolved} title="Cookie policy" />;
 }

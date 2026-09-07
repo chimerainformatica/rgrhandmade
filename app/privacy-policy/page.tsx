@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { LegalPolicyPage } from "@/components/privacy/LegalPolicyPage";
-import { getPublishedPrivacyConfig } from "@/lib/privacy/server";
+import { LegalDocumentPage } from "@/components/legalblink/LegalDocumentPage";
 
 export const metadata: Metadata = {
   title: "Informativa privacy",
@@ -9,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function PrivacyPolicyPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
-  const [{ lang }, config] = await Promise.all([searchParams, getPublishedPrivacyConfig()]);
-  return <LegalPolicyPage config={config} lang={lang === "en" ? "en" : "it"} type="privacy" />;
+  const { lang } = await searchParams;
+  const resolved = lang === "en" ? "en" : "it";
+  return <LegalDocumentPage document="privacy" lang={resolved} title={resolved === "en" ? "Privacy notice" : "Informativa privacy"} />;
 }
