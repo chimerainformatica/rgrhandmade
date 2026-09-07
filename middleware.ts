@@ -3,16 +3,30 @@ import { createServerClient } from "@supabase/ssr";
 
 const isDev = process.env.NODE_ENV !== "production";
 
+/**
+ * La Vercel Toolbar (commenti e feedback di preview) inietta vercel.live.
+ * Non ha alcuna funzione per i visitatori del sito, quindi resta fuori dalla
+ * CSP di produzione: sui deploy di preview NODE_ENV vale gia "production",
+ * percio serve VERCEL_ENV per distinguerli.
+ */
+const isPreview = process.env.VERCEL_ENV === "preview";
+const vercelLive = {
+  script: isPreview ? " https://vercel.live" : "",
+  connect: isPreview ? " https://vercel.live wss://ws-us3.pusher.com" : "",
+  frame: isPreview ? " https://vercel.live" : "",
+  img: isPreview ? " https://vercel.live https://vercel.com" : "",
+};
+
 function createCsp() {
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net https://app.legalblink.it${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://connect.facebook.net https://app.legalblink.it${vercelLive.script}${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
-    "img-src 'self' data: blob: https://placehold.co https://mzxsbwoeupzctfrtaemd.supabase.co https://www.google-analytics.com https://www.facebook.com",
+    `img-src 'self' data: blob: https://placehold.co https://mzxsbwoeupzctfrtaemd.supabase.co https://www.google-analytics.com https://www.facebook.com${vercelLive.img}`,
     "media-src 'self'",
-    "frame-src https://challenges.cloudflare.com https://app.legalblink.it",
-    `connect-src 'self' ws://localhost:* wss://localhost:*${isDev ? " ws://127.0.0.1:* wss://127.0.0.1:*" : ""} https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://www.facebook.com https://app.legalblink.it`,
+    `frame-src https://challenges.cloudflare.com https://app.legalblink.it${vercelLive.frame}`,
+    `connect-src 'self' ws://localhost:* wss://localhost:*${isDev ? " ws://127.0.0.1:* wss://127.0.0.1:*" : ""} https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://www.facebook.com https://app.legalblink.it${vercelLive.connect}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
