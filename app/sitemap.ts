@@ -27,11 +27,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.3,
     },
-    {
-      url: new URL("/richiesta-dati", settings.canonical_url).toString(),
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
   ];
 
   if (!getSupabaseConfig().hasServiceRole) return entries;

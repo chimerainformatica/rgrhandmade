@@ -50,12 +50,18 @@ test("codifica l'apostrofo nello slug delle condizioni d'uso", async () => {
   assert.ok(!url?.includes("'"), "l'apostrofo grezzo non deve comparire nell'URL");
 });
 
-test("il DSAR ripiega sull'italiano finche manca la versione inglese", async () => {
+test("nessun documento pubblicabile punta al DSAR, che e a uso interno", async () => {
   process.env.NEXT_PUBLIC_LEGALBLINK_DOCUMENT_SET_ID = "set-123";
   const mod = await loadConfig();
 
-  assert.equal(
-    mod.getDocumentUrl?.("dsar", "en"),
-    "https://app.legalblink.it/api/documents/set-123/dsar---data-subject-access-request-it",
-  );
+  // Il DSAR di LegalBlink e il modulo con cui il titolare gestisce una singola
+  // richiesta ricevuta: contiene i dati del richiedente e valutazioni interne.
+  // Nessuna rotta pubblica deve poterlo servire.
+  for (const doc of ["privacy", "cookie", "terms"] as const) {
+    for (const lang of ["it", "en"] as const) {
+      const url = mod.getDocumentUrl?.(doc, lang);
+      assert.ok(url, `${doc}/${lang} deve produrre un URL`);
+      assert.ok(!url.includes("dsar"), `${doc}/${lang} non deve puntare al DSAR: ${url}`);
+    }
+  }
 });

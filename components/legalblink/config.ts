@@ -6,7 +6,14 @@
  * cosi il sito gira in locale e in CI senza credenziali Aruba.
  */
 
-export type LegalBlinkDocument = "privacy" | "cookie" | "terms" | "dsar";
+/**
+ * Solo documenti destinati al pubblico.
+ *
+ * Il DSAR di LegalBlink e volutamente escluso: e un modulo a uso interno per
+ * gestire una singola richiesta ricevuta, contiene i dati del richiedente e le
+ * valutazioni del titolare. Pubblicarlo sarebbe una violazione.
+ */
+export type LegalBlinkDocument = "privacy" | "cookie" | "terms";
 export type LegalBlinkLang = "it" | "en";
 
 export type LegalBlinkLoaderAttributes = {
@@ -32,15 +39,14 @@ const DOCUMENT_SLUGS: Record<LegalBlinkDocument, string> = {
   privacy: "privacy-policy-per-siti-web-o-e-commerce",
   cookie: "cookie-policy",
   terms: "condizioni-d'uso-del-sito",
-  dsar: "dsar---data-subject-access-request",
 };
 
 /**
  * Documenti non ancora generati in inglese nel pannello Aruba: ripiegano
  * sull'italiano invece di servire un 404.
- * Rimuovere la voce non appena la versione EN esiste.
+ * Aggiungere una voce solo se la versione EN manca davvero.
  */
-const DOCUMENTS_WITHOUT_EN: ReadonlySet<LegalBlinkDocument> = new Set(["dsar"]);
+const DOCUMENTS_WITHOUT_EN: ReadonlySet<LegalBlinkDocument> = new Set();
 
 const licenseId = () => process.env.NEXT_PUBLIC_LEGALBLINK_LICENSE_ID ?? "";
 const documentSetId = () =>

@@ -17,7 +17,7 @@ const visibleExploreLinks = (links: Array<readonly [string, string]>) =>
   links.filter(([, href]) => !HIDDEN_HOME_HREFS.has(href));
 const visibleLegalLinks = (links: Array<readonly [string, string]>) =>
   links.filter(([, href]) =>
-    ["/privacy-policy", "/cookie-policy", "/condizioni-uso", "/richiesta-dati", "#cookie-settings"].includes(href));
+    ["/privacy-policy", "/cookie-policy", "/condizioni-uso", "#cookie-settings"].includes(href));
 
 type SiteFooterProps = {
   lang: Lang;
