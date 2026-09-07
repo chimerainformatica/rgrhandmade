@@ -522,7 +522,7 @@ export function VtxEventsSection({ config, lang }: Props) {
       preloadNeighborPreviews(newIndex);
       return { src: zoomUrl, alt: item.image_alt || item.title, index: newIndex };
     });
-  }, [publicationItems]);
+  }, [publicationItems, preloadNeighborPreviews]);
 
   useEffect(() => {
     if (!imagePreview) return;
