@@ -11,12 +11,13 @@ const asset = (n: string) => `/assets/rgr/${n}`;
 const BOXED_CONTAINER = "max-w-[1180px] mx-auto px-8 max-[640px]:px-4";
 const INSTAGRAM_URL = "https://www.instagram.com/r.g.r.handmade";
 const MAPS_URL = "https://www.google.com/maps/dir/43.4700288,11.8325248/Via+Piero+Calamandrei,+253,+52100+Arezzo+AR/@43.4657173,11.8169862,15z/data=!4m10!4m9!1m1!4e1!1m5!1m1!1s0x132bece8e04023b9:0x3875d6f93b97586b!2m2!1d11.8294183!2d43.4591404!3e0?entry=ttu&g_ep=EgoyMDI2MDYyMi4wIKXMDSoASAFQAw%3D%3D";
-const SHOW_FOOTER_LEGAL = false;
+const SHOW_FOOTER_LEGAL = true;
 const HIDDEN_HOME_HREFS = new Set(["#atelier"]);
 const visibleExploreLinks = (links: Array<readonly [string, string]>) =>
   links.filter(([, href]) => !HIDDEN_HOME_HREFS.has(href));
 const visibleLegalLinks = (links: Array<readonly [string, string]>) =>
-  links.filter(([, href]) => ["/privacy-policy", "/cookie-policy", "#cookie-settings"].includes(href));
+  links.filter(([, href]) =>
+    ["/privacy-policy", "/cookie-policy", "/condizioni-uso", "/richiesta-dati", "#cookie-settings"].includes(href));
 
 type SiteFooterProps = {
   lang: Lang;
