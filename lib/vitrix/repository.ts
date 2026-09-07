@@ -8,7 +8,7 @@ import type { VitrixUser } from "@/lib/vitrix/auth";
 
 function normalizeModuleRow(row: VitrixModuleRow | (Omit<VitrixModuleRow, "id"> & { id: string })): VitrixModuleRow | null {
   const id = row.id === "press" ? "events" : row.id;
-  if (id !== "dashboard" && id !== "catalogue" && id !== "events" && id !== "media" && id !== "settings" && id !== "widgets" && id !== "privacy") {
+  if (id !== "dashboard" && id !== "catalogue" && id !== "events" && id !== "media" && id !== "settings" && id !== "widgets" && id !== "privacy" && id !== "users") {
     return null;
   }
   return {
@@ -27,6 +27,12 @@ function localModules(): VitrixModuleRow[] {
     enabled: module.enabled,
     sort_order: index,
   }));
+}
+
+function ensureUsersModule(modules: VitrixModuleRow[]): VitrixModuleRow[] {
+  if (modules.some((module) => module.id === "users")) return modules;
+  const usersModule = localModules().find((module) => module.id === "users");
+  return usersModule ? [...modules, usersModule] : modules;
 }
 
 export function getLocalVitrixBootstrap(): VitrixBootstrap {
@@ -118,10 +124,12 @@ export async function getVitrixBootstrap(_user?: VitrixUser | null): Promise<Vit
       connected: true,
       settings,
       logsSummary: { open: logs.open.length, resolved: logs.resolved.length },
-      modules: ((modules.data ?? []) as (Omit<VitrixModuleRow, "id"> & { id: string })[])
-        .map(normalizeModuleRow)
-        .filter((module): module is VitrixModuleRow => Boolean(module))
-        .filter((module) => module.enabled),
+      modules: ensureUsersModule(
+        ((modules.data ?? []) as (Omit<VitrixModuleRow, "id"> & { id: string })[])
+          .map(normalizeModuleRow)
+          .filter((module): module is VitrixModuleRow => Boolean(module))
+          .filter((module) => module.enabled),
+      ),
       catalogue: (catalogue.data ?? []) as VitrixBootstrap["catalogue"],
       press: (press.data ?? []) as VitrixBootstrap["press"],
       roles: roles.data,

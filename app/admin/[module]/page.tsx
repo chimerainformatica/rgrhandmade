@@ -4,6 +4,7 @@ import { requireVitrixUser } from "@/lib/vitrix/auth";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { getVitrixBootstrap } from "@/lib/vitrix/repository";
 import { getDefaultAdminModuleId, isAdminModuleId } from "@/lib/admin-modules";
+import { canAccessUserManagement } from "@/lib/vitrix/users-core";
 
 export default async function AdminModulePage({ params }: { params: Promise<{ module: string }> }) {
   const config = getSupabaseConfig();
@@ -22,6 +23,10 @@ export default async function AdminModulePage({ params }: { params: Promise<{ mo
     if (module === "") {
       redirect(`/admin/${getDefaultAdminModuleId()}`);
     }
+    notFound();
+  }
+
+  if (module === "users" && (!user || !canAccessUserManagement(user.roles))) {
     notFound();
   }
 

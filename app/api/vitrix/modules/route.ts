@@ -4,8 +4,8 @@ import { requireVitrixApiPermission } from "@/lib/vitrix/api";
 import type { AdminModuleId } from "@/lib/admin-modules";
 import type { VitrixModuleRow } from "@/lib/vitrix/types";
 
-const LOCKED_MODULES = new Set<AdminModuleId>(["dashboard", "settings"]);
-const MODULE_IDS = new Set<AdminModuleId>(["dashboard", "catalogue", "events", "media", "settings", "widgets", "privacy"]);
+const LOCKED_MODULES = new Set<AdminModuleId>(["dashboard", "settings", "users"]);
+const MODULE_IDS = new Set<AdminModuleId>(["dashboard", "catalogue", "events", "media", "settings", "widgets", "privacy", "users"]);
 
 function isAdminModuleId(value: unknown): value is AdminModuleId {
   return typeof value === "string" && MODULE_IDS.has(value as AdminModuleId);
@@ -71,7 +71,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (LOCKED_MODULES.has(id) && !enabled) {
-    return NextResponse.json({ error: "Dashboard e Impostazioni non possono essere disabilitati." }, { status: 400 });
+    return NextResponse.json({ error: "Dashboard, Impostazioni e Utenti non possono essere disabilitati." }, { status: 400 });
   }
 
   const supabase = createAdminClient();

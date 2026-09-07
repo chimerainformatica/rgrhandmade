@@ -9,7 +9,8 @@
     "seed:superadmin": "node scripts/seed-superadmin.mjs",
     "lint": "eslint app components lib --ext .ts,.tsx --max-warnings=0",
     "test:contact-security": "node --import tsx --test lib/contact-security-core.test.ts",
-    "test:privacy": "node --import tsx --test lib/privacy/privacy.test.ts"
+    "test:privacy": "node --import tsx --test lib/privacy/privacy.test.ts",
+    "test:users": "node --import tsx --test lib/vitrix/users-core.test.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

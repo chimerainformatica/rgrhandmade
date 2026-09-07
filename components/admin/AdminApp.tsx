@@ -19,6 +19,7 @@ import PrivacyTipOutlinedIcon from "@mui/icons-material/PrivacyTipOutlined";
 import UploadOutlinedIcon from "@mui/icons-material/UploadOutlined";
 import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
 import WidgetsOutlinedIcon from "@mui/icons-material/WidgetsOutlined";
+import PeopleOutlineIcon from "@mui/icons-material/PeopleOutlined";
 import {
   Alert,
   Avatar,
@@ -46,8 +47,10 @@ import { SiteCataloguePanel } from "@/components/admin/SiteCataloguePanel";
 import { VitrixLoader } from "@/components/admin/VitrixLoader";
 import { WidgetsModule } from "@/components/admin/WidgetsModule";
 import { PrivacyPanel } from "@/components/admin/PrivacyPanel";
+import { UsersPanel } from "@/components/admin/UsersPanel";
 import type { AdminModuleId } from "@/lib/admin-modules";
 import type { VitrixUser } from "@/lib/vitrix/auth";
+import { canAccessUserManagement } from "@/lib/vitrix/users-core";
 import type { VitrixBootstrap, VitrixLogFile, VitrixModuleRow, VitrixSiteSettings } from "@/lib/vitrix/types";
 
 /* ── constants ─────────────────────────────────────────────── */
@@ -65,7 +68,8 @@ const moduleIcons: Record<AdminModuleId, React.ElementType> = {
   media: PhotoLibraryOutlinedIcon,
   settings: SettingsOutlinedIcon,
   widgets: WidgetsOutlinedIcon,
-  privacy: PrivacyTipOutlinedIcon
+  privacy: PrivacyTipOutlinedIcon,
+  users: PeopleOutlineIcon
 };
 
 const moduleMeta: Record<AdminModuleId, { title: string; eyebrow: string }> = {
@@ -75,7 +79,8 @@ const moduleMeta: Record<AdminModuleId, { title: string; eyebrow: string }> = {
   media: { title: "Media", eyebrow: "Asset" },
   settings: { title: "Impostazioni", eyebrow: "SEO e manutenzione" },
   widgets: { title: "Widgets", eyebrow: "Contenuti" },
-  privacy: { title: "Privacy & Cookie", eyebrow: "Compliance" }
+  privacy: { title: "Privacy & Cookie", eyebrow: "Compliance" },
+  users: { title: "Utenti", eyebrow: "Accessi e ruoli" }
 };
 
 /* ── shared sx helpers ──────────────────────────────────────── */
@@ -163,7 +168,10 @@ export function AdminApp({
   const isMobile = useMediaQuery("(max-width: 860px)");
 
   const isSuperadmin = Boolean(user?.permissions.includes("vitrix.superadmin"));
-  const modules = bootstrap.modules;
+  const modules = useMemo(
+    () => bootstrap.modules.filter((module) => module.id !== "users" || Boolean(user && canAccessUserManagement(user.roles))),
+    [bootstrap.modules, user],
+  );
   const userInitials = (user?.email ?? "GL").substring(0, 2).toUpperCase();
 
   useEffect(() => {
@@ -411,6 +419,9 @@ function ModuleBody({
   if (moduleId === "privacy") {
     const canManage = !user || isSuperadmin || Boolean(user.permissions.includes("vitrix.privacy.manage"));
     return <PrivacyPanel canManage={canManage} />;
+  }
+  if (moduleId === "users" && user && canAccessUserManagement(user.roles)) {
+    return <UsersPanel currentUser={user} />;
   }
 
   const fallbackMeta = moduleMeta[moduleId as AdminModuleId] ?? moduleMeta.dashboard;
@@ -726,11 +737,11 @@ function ModulesPanel({ canManage, notify }: { canManage: boolean; notify: Toast
   return (
     <Box sx={{ display: "grid", gap: 2 }}>
       <Typography sx={{ fontSize: 14, color: "var(--vx-text-secondary)", lineHeight: 1.7 }}>
-        Abilita o disabilita le voci operative del pannello. Dashboard e Impostazioni restano sempre attive.
+        Abilita o disabilita le voci operative del pannello. Dashboard, Impostazioni e Utenti restano sempre attivi.
       </Typography>
       <Box sx={{ border: "1px solid var(--vx-border)", borderRadius: "8px", overflow: "hidden", bgcolor: "var(--vx-surface)" }}>
         {modules.map((module) => {
-          const locked = module.id === "dashboard" || module.id === "settings";
+          const locked = module.id === "dashboard" || module.id === "settings" || module.id === "users";
           return (
             <Stack
               key={module.id}
