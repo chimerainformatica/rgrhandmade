@@ -66,6 +66,7 @@ import { AdminLoadingBoundary } from "@/components/admin/AdminLoadingBoundary";
 import { ItalianFlag, UKFlag } from "./Flags";
 import CollectionPreviewCard from "./CollectionPreviewCard";
 import type { PreviewMode } from "./CollectionPreviewCard";
+import { getCatalogueImageQualityWarning } from "@/lib/vitrix/catalogue-image";
 
 const CATALOGUE_TITLE = "Catalogo";
 const CATALOGUE_TITLE_STORAGE_KEY = "vitrix-site-catalogue-title";
@@ -300,6 +301,7 @@ export function SiteCataloguePanel() {
   const [cropSrc, setCropSrc] = useState("");
   const [cropOpen, setCropOpen] = useState(false);
   const [cropArea, setCropArea] = useState<Area | null>(null);
+  const [imageQualityWarning, setImageQualityWarning] = useState<string | null>(null);
 
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [mediaPickerTarget, setMediaPickerTarget] = useState<"collection" | "catalogue">("collection");
@@ -456,8 +458,15 @@ export function SiteCataloguePanel() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setOriginalFile(file);
+    setImageQualityWarning(null);
     setCropSrc(url);
     setCropOpen(true);
+    void createImageBitmap(file)
+      .then((bitmap) => {
+        setImageQualityWarning(getCatalogueImageQualityWarning(bitmap.width, bitmap.height));
+        bitmap.close();
+      })
+      .catch(() => setImageQualityWarning(null));
     e.target.value = "";
   };
 
@@ -468,6 +477,7 @@ export function SiteCataloguePanel() {
     setOriginalFile(null);
     setFilePreview("");
     setCropArea(null);
+    setImageQualityWarning(null);
     setSelectedMediaUrl("");
     setSelectedCollectionItems([]);
     setShowCollectionItems(false);
@@ -490,6 +500,7 @@ export function SiteCataloguePanel() {
     setOriginalFile(null);
     setFilePreview(row.img_path?.startsWith("http") ? row.img_path : "");
     setCropArea(null);
+    setImageQualityWarning(null);
     setSelectedMediaUrl("");
     setShowCollectionItems(getCatalogueItemType(row) === "collection");
     const itemsInCollection = rows.filter((item) => (item.parent_id ?? item.parure_id) === row.id).map((item) => item.id);
@@ -2229,6 +2240,11 @@ export function SiteCataloguePanel() {
                       </Typography>
                     )}
                   </Box>
+                  {imageQualityWarning && (
+                    <Alert severity="warning" sx={{ mt: 1.5, fontSize: 12, alignItems: "center" }}>
+                      {imageQualityWarning}
+                    </Alert>
+                  )}
                   <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
                 </Box>
               </Stack>
@@ -2294,6 +2310,7 @@ export function SiteCataloguePanel() {
           setCropOpen(false);
           setCropSrc("");
           setOriginalFile(null);
+          setImageQualityWarning(null);
         }}
       />
 
@@ -2308,6 +2325,7 @@ export function SiteCataloguePanel() {
             setFilePreview(file.url);
             setOriginalFile(null);
             setCropArea(null);
+            setImageQualityWarning(null);
           }
           setMediaPickerOpen(false);
         }}

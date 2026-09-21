@@ -17,6 +17,11 @@ import {
   getZoomImageUrl,
   preloadImage,
 } from "@/lib/vitrix/image";
+import {
+  getCollectionCardVariant,
+  getCatalogueImagePresentation,
+  type CatalogueImageVariant,
+} from "@/lib/vitrix/catalogue-image";
 
 const BOXED_CONTAINER = "max-w-[1180px] mx-auto px-8 max-[640px]:px-4";
 const MIN_PREVIEW_LOADING_MS = 180;
@@ -152,16 +157,18 @@ function getGridItems(items: CollectionRow[], activeKey: string, limit: number):
 
 function CollectionImage({
   card,
-  variant = "thumb",
+  variant,
   className = "",
-  fit = "cover",
 }: {
   card: CollectionRow;
-  variant?: "thumb" | "preview";
+  variant: CatalogueImageVariant;
   className?: string;
-  fit?: "cover" | "contain";
 }) {
-  const src = variant === "preview" ? getPreviewImageUrl(card.img_path) : getThumbnailImageUrl(card.img_path);
+  const presentation = getCatalogueImagePresentation(variant);
+  const isEditorial = variant === "editorial-cover" || variant === "editorial-cover-full";
+  // Next/Image genera il srcset direttamente dalla sorgente pubblica. In questo
+  // modo evitiamo di ricomprimere una trasformazione Supabase gia compressa.
+  const src = getZoomImageUrl(card.img_path);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -171,24 +178,22 @@ function CollectionImage({
   }, [src]);
 
   if (!src || failedSrc === src) {
-    return <div className={`h-full w-full ${variant === "thumb" ? "skeleton bg-[#eee7dd]" : "bg-[#d5cfc8]"} ${className}`} aria-hidden="true" />;
+    return <div className={`h-full w-full ${isEditorial ? "bg-[#d5cfc8]" : "skeleton bg-[#eee7dd]"} ${className}`} aria-hidden="true" />;
   }
 
   return (
     <span className={`relative block h-full w-full overflow-hidden ${className}`}>
-      {variant === "thumb" && !loaded && <span className="absolute inset-0 z-10 skeleton bg-[#eee7dd]" aria-hidden="true" />}
+      {!isEditorial && !loaded && <span className="absolute inset-0 z-10 skeleton bg-[#eee7dd]" aria-hidden="true" />}
       <Image
         src={src}
         alt={card.title}
         fill
-        className={`${fit === "contain" ? "object-contain" : "object-cover"} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
-        style={{ objectPosition: variant === "thumb" && fit === "contain" ? "center center" : card.img_position || "center" }}
-        sizes={variant === "preview"
-          ? "(max-width: 520px) 100vw, (max-width: 860px) 50vw, 45vw"
-          : "(max-width: 420px) 96px, (max-width: 768px) 120px, 160px"}
-        quality={variant === "preview" ? 88 : 68}
-        priority={variant === "preview"}
-        loading={variant === "preview" ? undefined : "lazy"}
+        className={`${presentation.fit === "contain" ? "object-contain" : "object-cover"} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        style={{ objectPosition: presentation.fit === "contain" ? "center center" : card.img_position || "center" }}
+        sizes={presentation.sizes}
+        quality={presentation.quality}
+        priority={isEditorial}
+        loading={isEditorial ? undefined : "lazy"}
         onLoad={() => setLoaded(true)}
         onError={() => setFailedSrc(src)}
       />
@@ -249,7 +254,7 @@ function CollectionBlock({
       >
         {/* Collection image (light zoom on hover) */}
         <div className="absolute inset-0 origin-center transition-transform duration-[800ms] ease-out will-change-transform group-hover:scale-[1.06]">
-          <CollectionImage card={head} variant="preview" />
+          <CollectionImage card={head} variant={hasGallery ? "editorial-cover" : "editorial-cover-full"} />
         </div>
 
         {/* Gradient overlay from bottom */}
@@ -323,8 +328,10 @@ function CollectionBlock({
           className={`grid h-full min-h-[440px] gap-3 max-[900px]:gap-2 max-[760px]:min-h-0 ${galleryLayoutClass} ${reverse ? "order-1" : ""}`}
         >
           {elements.map((item, idx) => {
-            const isWide = elements.length === 3 && idx === 2;
-            const colSpan = isWide ? "col-span-2" : "";
+            const cardVariant = getCollectionCardVariant(elements.length, idx);
+            const isWide = cardVariant === "wide-card";
+            const cardPresentation = getCatalogueImagePresentation(cardVariant);
+            const colSpan = elements.length === 3 && idx === 2 ? "col-span-2" : "";
             return (
               <button
                 key={item.id}
@@ -336,8 +343,8 @@ function CollectionBlock({
               >
                 {/* Image */}
                 <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#fffdf8]">
-                  <div className="absolute inset-0 flex items-center justify-center p-3 max-[640px]:p-2 origin-center transition-transform duration-500 ease-out group-hover:scale-[1.06]">
-                    <CollectionImage card={item} variant="thumb" fit="contain" />
+                  <div className={`absolute inset-0 flex items-center justify-center origin-center transition-transform duration-500 ease-out group-hover:scale-[1.06] ${isWide ? "p-3 max-[640px]:p-2" : ""}`}>
+                    <CollectionImage card={item} variant={cardVariant} />
                   </div>
 
                   {/* Hover overlay with "Preview" */}
@@ -371,7 +378,7 @@ function CollectionBlock({
                     {showRefBadge && (
                       <span className="block text-[10px] uppercase text-gold font-semibold" style={{ letterSpacing: "0.18em" }}>{item.ref}</span>
                     )}
-                    <span className="block truncate font-serif text-[15px] font-normal leading-[1.2] text-warm-black">
+                    <span className={`block truncate leading-[1.2] text-warm-black ${cardPresentation.labelClassName}`}>
                       {item.title}
                     </span>
                   </div>
@@ -436,7 +443,7 @@ function CollectionDetailModal({
         {/* Sinistra: immagine collezione */}
         <div className="relative shrink-0 max-[680px]:hidden" style={{ width: "52%" }}>
           <div className="absolute inset-0">
-            <CollectionImage card={head} variant="preview" />
+            <CollectionImage card={head} variant="editorial-cover" />
           </div>
           <div
             className="absolute inset-0 pointer-events-none"
@@ -497,7 +504,7 @@ function CollectionDetailModal({
                 >
                   <div className="relative overflow-hidden bg-white" style={{ aspectRatio: "1/1", padding: "16px" }}>
                     <div className="absolute inset-0 p-4 transition-transform duration-500 group-hover:scale-[1.05]">
-                      <CollectionImage card={item} variant="thumb" fit="contain" />
+                      <CollectionImage card={item} variant="wide-card" />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all duration-300 group-hover:bg-black/15">
                       <span
@@ -655,7 +662,7 @@ function GridCard({
           }}
           transition={{ duration: 0.45, ease: [0.2, 0.7, 0.2, 1] }}
         >
-          <CollectionImage card={card} variant="thumb" />
+          <CollectionImage card={card} variant="grid-card" />
         </motion.div>
 
         <motion.div
@@ -934,7 +941,7 @@ function PreviewModal({
                           : "h-[74px] w-[74px] ring-1 ring-gold/28 opacity-86 shadow-[0_10px_20px_rgba(40,30,18,0.11)] group-hover:opacity-100 group-hover:ring-warm-black/35 max-[520px]:h-[62px] max-[520px]:w-[62px]")
                       }
                     >
-                      <CollectionImage card={item} variant="thumb" />
+                      <CollectionImage card={item} variant="modal-thumbnail" />
                     </span>
                     <span className={"block w-[82px] max-w-full truncate text-center font-sans text-[9px] uppercase tracking-[0.14em] transition-colors max-[520px]:w-[68px] max-[520px]:tracking-[0.12em] " + (isActive ? "text-gold" : "text-taupe")}>
                       {item.title}
