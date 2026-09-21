@@ -11,7 +11,8 @@
     "test:contact-security": "node --import tsx --test lib/contact-security-core.test.ts",
     "test:privacy": "node --import tsx --test lib/privacy/privacy.test.ts",
     "test:users": "node --import tsx --test lib/vitrix/users-core.test.ts",
-    "test:legalblink": "node --import tsx --test components/legalblink/legalblink-core.test.ts"
+    "test:legalblink": "node --import tsx --test components/legalblink/legalblink-core.test.ts",
+    "test:catalogue-images": "node --import tsx --test lib/vitrix/catalogue-image.test.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
